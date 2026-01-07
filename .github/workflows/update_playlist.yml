@@ -1,0 +1,27 @@
+name: Update Playlist
+permissions:
+  contents: write
+on:
+  schedule:
+    - cron: '*/30 * * * *' # Run every 30 minutes
+  workflow_dispatch: # Allow manual trigger
+jobs:
+  update-playlist:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    - name: Run generation script
+      run: python convert_to_m3u.py
+    - name: Commit and push changes
+      run: |
+        git config --global user.name "GitHub Action"
+        git config --global user.email "action@github.com"
+        git add omnix_play.m3u
+        git commit -m "Auto-update playlist [skip ci]" || echo "No changes to commit"
+        git push
