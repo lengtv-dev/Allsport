@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>รับชมฟรี - FLIX Movie</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="robots" content="follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="style.css"> 
+    <script src="//content.jwplatform.com/libraries/SAHhwvZq.js"></script> 
+
+    <style>
+   body {
+    margin: 0;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background-color: var(--bg-dark);
+    color: var(--text-light);
+    line-height: 1.5;
+   }
+        .video-container {
+            aspect-ratio: 16/9; 
+            max-width: 854px;
+            width: 100%;
+            margin: 0 auto;
+            position: relative; /* สำคัญเพื่อให้ overlay อยู่ในกรอบ */
+        }
+        #jwplayerDiv {
+            width: 100%;
+            height: 100%;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+       #movie-title {
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid #333;
+      padding: 8px;
+      text-align: center;
+      margin-bottom: 12px;
+      font-size: 0.95rem;
+      background: #111;
+       }
+        .overlay-btn {
+            position: absolute;
+            top: 12px;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #fff;
+            backdrop-filter: blur(6px);
+            transition: all 0.3s;
+            z-index: 10;
+        }
+        .back-button {
+            left: 12px;
+            background: rgba(255,255,255,0.15);
+        }
+        .back-button:hover {
+            background: rgba(255,255,255,0.35);
+        }
+        .reload-button {
+            right: 12px;
+            background: rgba(229,9,20,0.6);
+        }
+        .reload-button:hover {
+            background: rgba(229,9,20,0.9);
+        }
+    </style>
+</head>
+<body class="bg-[#141414] text-white">
+
+    <!-- Header -->
+    <header class="bg-[#141414] shadow-lg">
+        <div class="container mx-auto px-4 py-4 flex justify-start items-center">
+            <a href="movie.html">
+                <h1 class="text-3xl font-extrabold text-[#E50914] tracking-wider">
+                    FLIX <span class="text-white">Movie</span>
+                </h1>
+            </a>
+        </div>
+    </header>
+
+    <!-- Main -->
+    <main class="container mx-auto px-4 mt-8 mb-16">
+        <div class="video-container">
+            <div id="jwplayerDiv"></div>
+
+            <!-- ปุ่ม overlay -->
+            <a href="movie.html" class="overlay-btn back-button">ย้อนกลับ</a>
+            <a href="#" id="reloadBtn" class="overlay-btn reload-button">โหลดซ้ำ</a>
+        </div>
+        
+        <div id="movie-title" class="text-2xl font-bold mt-4 mb-4 text-[#E50914]">กำลังโหลด...</div>
+        <p id="error-message" class="text-red-500 mt-4 hidden">เกิดข้อผิดพลาดในการโหลดวิดีโอ</p>
+    </main>
+
+<script type="text/javascript">
+    function getQueryParam(param) {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get(param);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const movieUrl = getQueryParam('file');
+        const movieName = getQueryParam('name');
+        const subtitleUrl = getQueryParam('subtitle'); 
+
+        const titleElement = document.getElementById('movie-title');
+        const errorMessage = document.getElementById('error-message');
+
+        titleElement.textContent = movieName || 'ไม่พบชื่อหนัง';
+        document.title = `ดูหนัง | ${movieName || 'ไม่พบชื่อหนัง'}`;
+
+        if (!movieUrl) {
+             errorMessage.textContent = '❌ ไม่พบ URL ไฟล์หนังที่จำเป็น';
+             errorMessage.classList.remove('hidden');
+             return;
+        }
+        
+        let fileType = 'hls';
+        if (movieUrl.endsWith('.mpd')) fileType = 'dash';
+        else if (movieUrl.endsWith('.mp4')) fileType = 'mp4';
+
+        let playerConfig = {
+            file: movieUrl,
+            label: "Auto",
+            type: fileType,
+            autostart: "viewable",
+            controls: true,
+            stretching: "uniform", 
+            width: "100%",
+            height: "100%", 
+            crossorigin: "anonymous",
+            preload: "auto",
+            primary: "html5",
+            default: true,
+            hlshtml: true,
+            //androidhls: true,
+            playbackRateControls: true,
+            captions: {
+                position: 'bottom',
+                backgroundOpacity: 0,
+                color: '#FFFFFF'
+            },
+            tracks: []
+        };
+        
+        if (subtitleUrl && subtitleUrl.trim() !== '' && subtitleUrl !== 'undefined') {
+            playerConfig.tracks.push({
+                file: subtitleUrl,
+                label: 'Thai',
+                kind: 'captions',
+                default: true
+            });
+        }
+        
+        try {
+            const playerInstance = jwplayer("jwplayerDiv").setup(playerConfig);
+            playerInstance.on('error', function(event) {
+                errorMessage.textContent = `❌ ข้อผิดพลาดในการเล่นวิดีโอ: ${event.message}`;
+                errorMessage.classList.remove('hidden');
+            });
+
+            // ปุ่ม reload แบบไม่รีเฟรชทั้งหน้า
+            document.getElementById("reloadBtn").addEventListener("click", (e) => {
+                e.preventDefault();
+                playerInstance.load(playerConfig);
+                playerInstance.play();
+            });
+
+        } catch (e) {
+            errorMessage.textContent = '❌ ข้อผิดพลาดร้ายแรงในการสร้าง Player';
+            errorMessage.classList.remove('hidden');
+        }
+    });
+</script>
+</body>
+</html>

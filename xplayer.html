@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Live Player</title>
+
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
+<style>
+body {
+  margin: 0;
+  background: #000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+video {
+  width: 100%;
+  max-width: 1000px;
+  height: auto;
+  background: #000;
+}
+</style>
+</head>
+<body>
+
+<video id="video" controls autoplay playsinline></video>
+
+<script>
+const API_URL = "https://parser-xi.vercel.app/api/playboy";
+const video = document.getElementById("video");
+
+async function loadStream() {
+  try {
+    const res = await fetch(API_URL);
+    const data = await res.json();
+
+    console.log("API Response:", data);
+
+    const streamUrl = data.signedUrl || data.url;
+
+    if (!streamUrl) {
+      alert("ไม่พบ URL สตรีม");
+      return;
+    }
+
+    if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      video.src = streamUrl;
+    } else if (Hls.isSupported()) {
+      const hls = new Hls();
+      hls.loadSource(streamUrl);
+      hls.attachMedia(video);
+    }
+
+  } catch (err) {
+    console.error(err);
+    alert("เกิดข้อผิดพลาด");
+  }
+}
+
+loadStream();
+
+// 🔥 auto refresh ถ้า stream error
+video.addEventListener("error", () => {
+  console.log("Stream error → reload");
+  setTimeout(loadStream, 3000);
+});
+</script>
+
+</body>
+</html>

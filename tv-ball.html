@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Playid บอลสด</title>
+  <meta name="description" content="เว็บดูบอลสด ตารางแข่งขันฟุตบอล ถ่ายทอดสดทุกลีกทั่วโลก อัปเดตเรียลไทม์">
+
+  <link rel="icon" href="https://raw.githubusercontent.com/Digital1ID/digital1id.github.io/refs/heads/main/1087837_ico.png" type="image/png">
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="b-style.css">
+
+  <!-- HLS -->
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
+  <!-- Custom JS -->
+  <script src="b-script.js" defer></script>
+</head>
+
+<body class="bg-[#141414] text-white font-[Inter]">
+
+<!-- ================= HEADER ================= -->
+<header class="sticky top-0 z-50 bg-[#141414]/95 backdrop-blur-sm shadow-lg border-b border-[#222]">
+  <div class="container mx-auto px-4 py-4 flex flex-wrap justify-between items-center">
+    <a href="tv-ball.html">
+      <h1 class="text-3xl font-extrabold text-[#E50914] tracking-wider">
+        PLAYID <span class="text-white">ดูฟุตบอลสด</span>
+      </h1>
+    </a>
+
+    <nav class="flex flex-wrap gap-2 text-sm font-medium">
+      <a href="tv-ball.html" class="py-1 px-3 rounded bg-[#E50914] text-white">🏟 ตารางสด</a>
+      <a href="movie.html" class="py-1 px-3 rounded hover:bg-[#333] transition">🎬 หนัง/ซีรี่ย์</a>
+      <a href="about.html" class="py-1 px-3 rounded hover:bg-[#333] transition">ℹ️ เกี่ยวกับเรา</a>
+    </nav>
+  </div>
+</header>
+
+
+<!-- ================= PLAYER ================= -->
+<section id="playerBox" class="hidden max-w-6xl mx-auto mt-6 px-4">
+  <h2 id="playerTitle" class="text-xl font-bold mb-4 text-[#E50914] text-center">
+    ⚽ ตัวเล่นวิดีโอ
+  </h2>
+
+  <div class="flex justify-center">
+    <video id="videoPlayer"
+      controls
+      class="w-full max-w-4xl rounded-lg border-2 border-[#E50914]">
+    </video>
+  </div>
+</section>
+
+
+<!-- ================= CONTROLS ================= -->
+<section class="max-w-6xl mx-auto px-4 mt-6 flex flex-wrap gap-3 items-center">
+
+  <select id="leagueSelect" class="bg-[#1f1f1f] border border-[#333] rounded px-3 py-2 text-sm">
+    <option value="all">ทุกลีก</option>
+  </select>
+
+  <select id="statusSelect" class="bg-[#1f1f1f] border border-[#333] rounded px-3 py-2 text-sm">
+    <option value="all">ทุกสถานะ</option>
+    <option value="LIVE">LIVE</option>
+    <option value="FT">FT</option>
+    <option value="UPCOMING">ยังไม่แข่ง</option>
+  </select>
+
+  <input
+    type="text"
+    id="searchInput"
+    placeholder="ค้นหาทีม/ลีก..."
+    onkeyup="filterTable()"
+    class="flex-1 min-w-[180px] bg-[#1f1f1f] border border-[#333] rounded px-3 py-2 text-sm">
+</section>
+
+
+<!-- ================= TABLE ================= -->
+<section class="max-w-6xl mx-auto px-4 mt-6 mb-16 overflow-x-auto">
+  <table id="matchesTable" class="w-full text-sm">
+
+    <thead class="bg-[#1f1f1f]">
+      <tr>
+        <th class="py-3">ทีมเหย้า</th>
+        <th>สกอร์</th>
+        <th>ทีมเยือน</th>
+        <th>วันที่ / เวลา</th>
+        <th>สถานะ</th>
+        <th>ช่อง</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr>
+        <td colspan="6" class="text-center py-6">
+          กำลังโหลดข้อมูลการแข่งขัน...
+        </td>
+      </tr>
+    </tbody>
+
+  </table>
+</section>
+
+</body>
+</html>

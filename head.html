@@ -1,0 +1,29 @@
+    <header class="sticky top-0 z-50 bg-gray-900/90 backdrop-blur-sm shadow-xl">
+        <div class="container mx-auto px-4 py-4 flex flex-wrap justify-between items-center">
+            <a href="index.html" class="mb-2 sm:mb-0">
+                <h1 class="text-3xl font-extrabold text-blue-600 tracking-wider">
+                    SAMORN <span class="text-white">Movie</span>
+                </h1>
+            </a>
+            
+            <nav id="main-nav" class="flex flex-wrap space-x-2 space-y-2 sm:space-y-0 text-sm font-medium pt-2 sm:pt-0">
+                <a href="movie.html" class="py-1 px-3 rounded-full bg-blue-600 text-white transition duration-300 flex-shrink-0">หน้าหลัก</a>
+                
+                <a href="category.html?cat=thai" class="py-1 px-3 rounded-full hover:bg-gray-700 transition duration-300 flex-shrink-0">ไทย</a>
+                <a href="category.html?cat=korea" class="py-1 px-3 rounded-full hover:bg-gray-700 transition duration-300 flex-shrink-0">เกาหลี</a>
+                <a href="category.html?cat=china" class="py-1 px-3 rounded-full hover:bg-gray-700 transition duration-300 flex-shrink-0">จีน/ฮ่องกง</a>
+                <a href="category.html?cat=inter" class="py-1 px-3 rounded-full hover:bg-gray-700 transition duration-300 flex-shrink-0">สากล</a>
+                <a href="category.html?cat=cartoon" class="py-1 px-3 rounded-full hover:bg-gray-700 transition duration-300 flex-shrink-0">การ์ตูน</a>
+                <a href="category.html?cat=india" class="py-1 px-3 rounded-full hover:bg-gray-700 transition duration-300 flex-shrink-0">อินเดีย</a>
+                <a href="category.html?cat=asia" class="py-1 px-3 rounded-full hover:bg-gray-700 transition duration-300 flex-shrink-0">เอเซีย </a>
+                
+            </nav>
+
+            <form id="search-form" class="w-full mt-2 sm:w-auto sm:mt-0 flex space-x-2" onsubmit="return false;">
+                <input type="text" id="search-input" placeholder="ค้นหาหนัง..." class="px-4 py-2 rounded-full bg-gray-800 border border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 w-full sm:w-64" oninput="searchMovies()">
+                <button type="submit" onclick="searchMovies()" class="px-3 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition duration-300">
+                    🔍
+                </button>
+            </form>
+        </div>
+    </header>

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>Doo-Parser Player</title>
+  <style>
+    body { margin:0; background:#000; width:100vw; height:100vh; display:flex; flex-direction:column; }
+    #videoTitle { color:#fff; padding:10px; }
+    #selectorBar { background:#111; color:#fff; padding:10px; display:flex; gap:20px; flex-wrap:wrap; }
+    select, button { padding:6px; margin:2px; }
+    video { width:100%; height:100%; background:#000; }
+    #subtitleOverlay {
+      position: fixed;
+      bottom: 8%;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      pointer-events: none;
+      display: none;
+      transition: opacity 0.3s ease-in-out;
+      max-width: 60%;
+      max-height: 25%;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.7));
+      border-radius: 6px;
+      background-color: rgba(0,0,0,0.2);
+    }
+    #controls { background:#222; padding:10px; display:flex; gap:10px; justify-content:center; }
+    #controls button { background:#444; color:#fff; border:none; padding:8px 12px; cursor:pointer; border-radius:4px; }
+    #controls button:hover { background:#666; }
+  </style>
+</head>
+<body>
+  <div id="selectorBar">
+    <label for="seasonSelect">ซีซั่น:</label>
+    <select id="seasonSelect"></select>
+    <label for="episodeSelect">ตอน:</label>
+    <select id="episodeSelect"></select>
+    <label for="audioSelector">เสียง:</label>
+    <select id="audioSelector"></select>
+    <label for="qualitySelector">คุณภาพ:</label>
+    <select id="qualitySelector"></select>
+    <label for="subtitleSelector">ซับ:</label>
+    <select id="subtitleSelector"></select>
+  </div>
+  <video id="video" controls autoplay crossorigin="anonymous" allow="fullscreen; picture-in-picture"></video>
+  <img id="subtitleOverlay">
+  <div id="controls">
+    <button id="playPause">▶️/⏸️</button>
+    <button id="stop">⏹️</button>
+    <button id="mute">🔇/🔊</button>
+    <button id="fullscreen">⛶</button>
+  </div>
+  <div id="videoTitle"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <script src="js/doo-parser.js"></script>
+</body>
+</html>

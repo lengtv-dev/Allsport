@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>Anime Playlist Parser</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f9f9f9; padding: 20px; }
+    pre { background: #222; color: #0f0; padding: 10px; overflow-x: auto; }
+    .series { margin-bottom: 30px; }
+    .poster { max-width: 200px; }
+  </style>
+</head>
+<body>
+  <h1>Anime Playlist Parser (HTML/JS Version)</h1>
+  <div id="output">Loading...</div>
+
+  <script>
+    async function fetchViaProxy(url) {
+      const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
+      const res = await fetch(proxyUrl);
+      if (!res.ok) return null;
+      return await res.text();
+    }
+
+    function parseWatchPage(html) {
+      const doc = new DOMParser().parseFromString(html, "text/html");
+      const title = doc.querySelector(".post-title h3")?.textContent.trim() || "";
+      const img = doc.querySelector(".bottom-1x img");
+      const poster = img ? { src: img.src, alt: img.alt } : {};
+      const synopsis = doc.querySelector("#synopsis p")?.textContent.trim() || "";
+      const iframe = doc.querySelector("iframe");
+      const player = iframe ? { src: iframe.src } : {};
+      return { title, poster, synopsis, player };
+    }
+
+    function decodeEmbedUrl(embedUrl) {
+      try {
+        const url = new URL(embedUrl);
+        const link = url.searchParams.get("link");
+        if (!link) return {};
+        const decoded = atob(link);
+        const parsed = new URL(decoded);
+        const pathParts = parsed.pathname.split("/");
+        const videoId = pathParts[pathParts.length - 1];
+        const m3u8Link = `https://files.akuma-player.xyz/view/${videoId}.m3u8`;
+        return { player: { m3u8: m3u8Link } };
+      } catch {
+        return {};
+      }
+    }
+
+    function generateM3U(seriesData) {
+      let m3u = "#EXTM3U\n";
+      const logo = seriesData.poster?.src || "";
+      const title = seriesData.title || "การ์ตูน";
+      let epNum = 1;
+      for (const ep of seriesData.episodes) {
+        const link = ep.embed?.player?.m3u8 || "";
+        if (link) {
+          m3u += `#EXTINF:-1 type="series" group-title=""  tvg-logo="${logo}" tvg-season="" tvg-episode="${epNum}", ${title} E${String(epNum).padStart(2,"0")}\n`;
+          m3u += `#EXTVLCOPT:http-referrer=https://files.akuma-player.xyz/\n`;
+          m3u += link + "\n";
+        }
+        epNum++;
+      }
+      return m3u;
+    }
+
+    async function main() {
+      const params = new URLSearchParams(window.location.search);
+      const ids = params.get("ids")?.split(",") || ["109497"];
+      const output = document.getElementById("output");
+      output.innerHTML = "";
+
+      for (const id of ids) {
+        const categoryUrl = `https://anime-hdzero.com/cat/${id}`;
+        const html = await fetchViaProxy(categoryUrl);
+        if (!html) {
+          output.innerHTML += `<p>โหลดข้อมูลไม่สำเร็จสำหรับ id=${id}</p>`;
+          continue;
+        }
+        const doc = new DOMParser().parseFromString(html, "text/html");
+        const title = doc.querySelector(".card-body h1")?.textContent.trim() || "";
+        const img = doc.querySelector(".card-body img");
+        const poster = img ? { src: img.src, alt: img.alt } : {};
+        const synopsis = doc.querySelector(".card-body p")?.textContent.trim() || "";
+
+        const epLink = doc.querySelector(".card-body a")?.href;
+        let episodes = [];
+        if (epLink) {
+          const watchHtml = await fetchViaProxy(epLink);
+          const watchData = parseWatchPage(watchHtml);
+          const embedData = decodeEmbedUrl(watchData.player.src || "");
+          episodes.push({ watch_page: watchData, embed: embedData });
+        }
+
+        const seriesData = { poster, title, synopsis, episodes };
+        const m3u = generateM3U(seriesData);
+
+        output.innerHTML += `
+          <div class="series">
+            <h2>${title}</h2>
+            <img class="poster" src="${poster.src}" alt="${poster.alt}">
+            <p>${synopsis}</p>
+            <h3>Playlist (.m3u)</h3>
+            <pre>${m3u}</pre>
+          </div>
+        `;
+      }
+    }
+
+    main();
+  </script>
+</body>
+</html>

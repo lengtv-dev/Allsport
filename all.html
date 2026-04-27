@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Doo-Nang Ultimate Parser & Player</title>
+  
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  
+  <style>
+    :root { --primary: #5FBE00; --bg: #0f0f0f; --card: #1e1e1e; --text: #efefef; --blue: #0078d7; }
+    body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; display: flex; height: 100vh; overflow: hidden; }
+    
+    /* Sidebar: Catalog List */
+    .sidebar { width: 320px; background: var(--card); border-right: 1px solid #333; display: flex; flex-direction: column; }
+    .sidebar-header { padding: 15px; border-bottom: 1px solid #333; }
+    .catalog-list { flex: 1; overflow-y: auto; padding: 10px; }
+    .catalog-item { display: flex; gap: 10px; padding: 8px; margin-bottom: 8px; border-radius: 6px; cursor: pointer; transition: 0.2s; background: #252525; }
+    .catalog-item:hover { background: #333; border-left: 4px solid var(--primary); }
+    .catalog-item img { width: 50px; height: 75px; object-fit: cover; border-radius: 4px; }
+    .item-info { font-size: 12px; overflow: hidden; }
+    .item-title { font-weight: bold; color: var(--primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* Main Content: Player & Data */
+    .main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+    
+    /* Player Section */
+    .player-section { width: 100%; background: #000; aspect-ratio: 16/9; max-height: 500px; display: flex; align-items: center; justify-content: center; position: relative; }
+    video { width: 100%; height: 100%; max-height: 500px; outline: none; }
+
+    /* Info Section */
+    .content-padding { padding: 20px; }
+    .tabs { display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+    .tab-btn { padding: 8px 16px; border: none; background: #333; color: white; border-radius: 4px; cursor: pointer; }
+    .tab-btn.active { background: var(--primary); color: black; font-weight: bold; }
+    
+    .ep-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; margin-top: 10px; }
+    .ep-btn { padding: 10px; background: #252525; border: 1px solid #444; color: white; border-radius: 4px; cursor: pointer; text-align: center; font-size: 13px; }
+    .ep-btn:hover { background: var(--blue); }
+    .ep-btn.active { border-color: var(--primary); color: var(--primary); }
+
+    pre { background: #000; color: #5FBE00; padding: 15px; border-radius: 8px; font-size: 12px; overflow-x: auto; border: 1px solid #333; }
+    button.dl-btn { padding: 10px 20px; background: var(--blue); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-bottom: 10px; }
+    
+    .hidden { display: none; }
+    .loader-inline { color: var(--primary); font-weight: bold; padding: 20px; text-align: center; }
+  </style>
+</head>
+<body>
+
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h3 style="margin:0; color:var(--primary);">Doo-Nang Catalog</h3>
+      <button onclick="loadCatalog()" style="width:100%; margin-top:10px; cursor:pointer;">🔄 ดึงข้อมูลใหม่</button>
+    </div>
+    <div id="catalogList" class="catalog-list">
+      <div class="loader-inline">กำลังโหลดรายการ...</div>
+    </div>
+  </div>
+
+  <div class="main-content">
+    
+    <div class="player-section">
+      <video id="hlsPlayer" controls></video>
+      <div id="playerPlaceholder" style="position:absolute; color:#555;">เลือกตอนเพื่อเริ่มเล่นวิดีโอ</div>
+    </div>
+
+    <div class="content-padding">
+      <h2 id="displayTitle" style="margin:0;">กรุณาเลือกเรื่องจากแถบด้านซ้าย</h2>
+      <p id="displayYear" style="color:#888; margin: 5px 0 20px 0;"></p>
+
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('episodes')">รายการตอน</button>
+        <button class="tab-btn" onclick="switchTab('m3u')">M3U Playlist</button>
+        <button class="tab-btn" onclick="switchTab('json')">JSON Data</button>
+      </div>
+
+      <div id="tab-episodes">
+        <div id="seasonSelector"></div>
+        <div id="epList" class="ep-grid"></div>
+      </div>
+
+      <div id="tab-m3u" class="hidden">
+        <button class="dl-btn" id="btnDownloadM3U">📥 ดาวน์โหลดไฟล์ .m3u</button>
+        <pre id="m3uCode"></pre>
+      </div>
+
+      <div id="tab-json" class="hidden">
+        <pre id="jsonCode"></pre>
+      </div>
+    </div>
+  </div>
+
+<script>
+const API_URL = "https://api.doo-nang.com/graphql";
+let currentSeriesData = null;
+const hls = new Hls();
+const video = document.getElementById('hlsPlayer');
+
+// --- 1. ระบบ Catalog (หน้าแรก) ---
+async function loadCatalog() {
+  const query = `query getShows { shows(page: 1, limit: 40, sort: "releaseDate", order: "desc") { docs { id titleTh titleEn posterUrl releaseDate } } }`;
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query })
+    });
+    const result = await res.json();
+    const docs = result.data.shows.docs;
+    
+    const container = document.getElementById("catalogList");
+    container.innerHTML = docs.map(item => `
+      <div class="catalog-item" onclick="fetchSeries(${item.id})">
+        <img src="${item.posterUrl}" alt="p">
+        <div class="item-info">
+          <div class="item-title">${item.titleTh}</div>
+          <div style="color:#777">${item.titleEn}</div>
+          <div style="margin-top:4px">ID: ${item.id} | ${item.releaseDate?.substring(0,4)}</div>
+        </div>
+      </div>
+    `).join('');
+  } catch (e) { console.error(e); }
+}
+
+// --- 2. ระบบดึงข้อมูลซีรีส์ (Parser) ---
+async function fetchSeries(id) {
+  document.getElementById("displayTitle").innerText = "⏳ กำลังดึงข้อมูล...";
+  const query = `query getShow($id: Int!) {
+    show(id: $id) {
+      id titleTh titleEn posterUrl releaseDate synopsisTh
+      episodes { seasonNo episodeNo titleTh video { transcodeUuid cdnHostname } }
+    }
+  }`;
+
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query, variables: { id: parseInt(id) } })
+    });
+    const result = await res.json();
+    const show = result.data.show;
+
+    currentSeriesData = {
+      id: show.id,
+      name: show.titleTh || show.titleEn,
+      poster: show.posterUrl,
+      year: show.releaseDate?.substring(0,4),
+      episodes: show.episodes.map(e => ({
+        s: e.seasonNo || 1,
+        e: e.episodeNo,
+        title: e.titleTh || `ตอนที่ ${e.episodeNo}`,
+        url: e.video ? `https://api.doo-nang.com/video/${e.video.transcodeUuid}/playlist.m3u8` : null
+      }))
+    };
+
+    renderUI();
+  } catch (e) { alert("ดึงข้อมูลไม่สำเร็จ"); }
+}
+
+// --- 3. ระบบแสดงผล UI ---
+function renderUI() {
+  document.getElementById("displayTitle").innerText = currentSeriesData.name;
+  document.getElementById("displayYear").innerText = "ปีที่ฉาย: " + currentSeriesData.year;
+  
+  // Render Episodes
+  const epList = document.getElementById("epList");
+  epList.innerHTML = currentSeriesData.episodes.map(ep => 
+    ep.url ? `<button class="ep-btn" onclick="playVideo('${ep.url}', this)">EP ${ep.e}</button>` : ''
+  ).join('');
+
+  // Render M3U
+  let m3u = "#EXTM3U\n";
+  currentSeriesData.episodes.forEach(ep => {
+    if(ep.url) {
+      m3u += `#EXTINF:-1 tvg-logo="${currentSeriesData.poster}" group-title="${currentSeriesData.name}", ${currentSeriesData.name} E${ep.e}\n${ep.url}\n`;
+    }
+  });
+  document.getElementById("m3uCode").textContent = m3u;
+  document.getElementById("jsonCode").textContent = JSON.stringify(currentSeriesData, null, 2);
+
+  // Download Button
+  document.getElementById("btnDownloadM3U").onclick = () => {
+    const blob = new Blob([m3u], { type: 'text/plain' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${currentSeriesData.name}.m3u`;
+    link.click();
+  };
+}
+
+// --- 4. ระบบเครื่องเล่นวิดีโอ ---
+function playVideo(url, btn) {
+  // UI Update
+  document.querySelectorAll('.ep-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById("playerPlaceholder").classList.add("hidden");
+
+  // HLS Load
+  if (Hls.isSupported()) {
+    hls.loadSource(url);
+    hls.attachMedia(video);
+    hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
+  } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+    video.src = url;
+    video.play();
+  }
+}
+
+// --- 5. ระบบ Tab ---
+function switchTab(tabName) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  
+  document.getElementById("tab-episodes").classList.add("hidden");
+  document.getElementById("tab-m3u").classList.add("hidden");
+  document.getElementById("tab-json").classList.add("hidden");
+  
+  document.getElementById("tab-" + tabName).classList.remove("hidden");
+}
+
+// เริ่มต้นโหลด Catalog
+loadCatalog();
+</script>
+</body>
+</html>

@@ -1,0 +1,51 @@
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FLIX Movie | หน้าหลัก</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="https://raw.githubusercontent.com/Digital1ID/digital1id.github.io/refs/heads/main/1087837_ico.png" type="image/png">
+</head>
+<body class="bg-[#141414] text-white">
+    <header class="sticky top-0 z-50 bg-[#141414]/95 backdrop-blur-sm shadow-lg">
+        <div class="container mx-auto px-4 py-4 flex flex-wrap justify-between items-center">
+            <a href="movie.html" class="mb-2 sm:mb-0">
+                <h1 class="text-3xl font-extrabold text-[#E50914] tracking-wider">
+                    FLIX <span class="text-white">Movie</span>
+                </h1>
+            </a>
+            
+            <nav id="main-nav" class="flex flex-wrap space-x-2 text-sm font-medium">
+                <a href="tv-ball.html" class="py-1 px-3 rounded hover:bg-[#333]">🏟 ตารางสด</a>
+                <a href="movie.html" class="py-1 px-3 rounded bg-[#E50914] text-white">🎬 หนัง/ซีรี่ย์</a>
+                <a href="about.html" class="py-1 px-3 rounded hover:bg-[#333]">ℹ️ เกี่ยวกับเรา</a>
+            </nav>
+
+            <form id="search-form" class="w-full sm:w-auto flex space-x-2 mt-2 sm:mt-0" onsubmit="return false;">
+                <input type="text" id="search-input" placeholder="ค้นหาหนัง..." 
+                       class="px-4 py-2 rounded bg-[#333] border border-[#555] text-sm focus:ring-2 focus:ring-[#E50914] text-white w-full sm:w-64"
+                       oninput="searchMovies()">
+                <button type="submit" onclick="searchMovies()" 
+                        class="px-3 py-2 bg-[#E50914] text-white rounded hover:bg-red-700">🔍</button>
+            </form>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 mt-8">
+        <div id="search-result-container"></div>
+        <div id="movie-sections-container">
+            <p class="text-gray-400">กำลังโหลดรายการหนังทั้งหมด...</p>
+        </div>
+    </main>
+
+    <script src="script-v1.js"></script>
+  <script>
+  function scrollSection(button, direction) {
+    const container = button.closest('section').querySelector('.movie-row');
+    const scrollAmount = 300;
+    container.scrollBy({ left: direction * scrollAmount, behavior: 'smooth' });
+  }
+  </script>
+</body>
+</html>

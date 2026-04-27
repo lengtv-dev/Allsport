@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FLIX Movie | หมวดหมู่</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="bg-[#141414] text-white">
+    <header class="sticky top-0 z-50 bg-[#141414]/95 backdrop-blur-sm shadow-lg">
+        <div class="container mx-auto px-4 py-4 flex flex-wrap justify-between items-center">
+            <a href="movie.html" class="mb-2 sm:mb-0">
+                <h1 class="text-3xl font-extrabold text-[#E50914] tracking-wider">
+                    FLIX <span class="text-white">Movie</span>
+                </h1>
+            </a>
+            
+            <nav id="main-nav" class="flex flex-wrap space-x-2 text-sm font-medium">
+                <a href="movie.html" class="py-1 px-3 rounded hover:bg-[#333]">หน้าหลัก</a>
+                <a href="category.html?cat=new" data-category="new" class="py-1 px-3 rounded hover:bg-[#333]">หนังใหม่</a>
+                <a href="category.html?cat=thai" data-category="thai" class="py-1 px-3 rounded hover:bg-[#333]">ไทย</a>
+                <a href="category.html?cat=korea" data-category="korea" class="py-1 px-3 rounded hover:bg-[#333]">เกาหลี</a>
+                <a href="category.html?cat=china" data-category="china" class="py-1 px-3 rounded hover:bg-[#333]">จีน/ฮ่องกง</a>
+                <a href="category.html?cat=inter" data-category="inter" class="py-1 px-3 rounded hover:bg-[#333]">สากล</a>
+                <a href="category.html?cat=cartoon" data-category="cartoon" class="py-1 px-3 rounded hover:bg-[#333]">การ์ตูน</a>
+                <a href="category.html?cat=india" data-category="india" class="py-1 px-3 rounded hover:bg-[#333]">อินเดีย</a>
+                <a href="category.html?cat=asia" data-category="asia" class="py-1 px-3 rounded hover:bg-[#333]">เอเชีย</a>
+                <a href="category.html?cat=laconcin" data-category="laconcin" class="py-1 px-3 rounded hover:bg-[#333]">ละครจีน</a>
+            </nav>
+
+            <form id="search-form" class="w-full sm:w-auto flex space-x-2 mt-2 sm:mt-0" onsubmit="return false;">
+                <input type="text" id="search-input" placeholder="ค้นหาหนัง..." 
+                       class="px-4 py-2 rounded bg-[#333] border border-[#555] text-sm focus:ring-2 focus:ring-[#E50914] text-white w-full sm:w-64"
+                       oninput="searchMovies()">
+                <button type="submit" onclick="searchMovies()" 
+                        class="px-3 py-2 bg-[#E5014] text-white rounded hover:bg-red-700">🔍</button>
+            </form>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 mt-8">
+        <h3 id="category-title" class="text-3xl font-bold mb-6 border-l-4 border-[#E50914] pl-3"></h3>
+        
+        <div id="movie-list-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3">
+            <p class="text-gray-400 col-span-full">กำลังโหลดหมวดหมู่...</p>
+        </div>
+        
+        <div id="pagination-container" class="mt-10 mb-10"></div>
+    </main>
+
+    <script src="category-v1.js"></script>
+</body>
+</html>

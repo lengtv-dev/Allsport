@@ -1,0 +1,96 @@
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>M3U8 JSON Parser</title>
+</head>
+<body>
+  <pre id="output">[]</pre>
+<script>
+function parseM3U8(text) {
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+  const entries = [];
+  let current = null;
+
+  const parseAttrs = (line) => {
+    const attrs = {};
+    const regex = /(\w[\w-]*)="([^"]*)"/g;
+    let m;
+    while ((m = regex.exec(line)) !== null) {
+      attrs[m[1]] = m[2];
+    }
+    return attrs;
+  };
+
+  const flush = () => {
+    if (current && current.name && current.video) entries.push(current);
+    current = null;
+  };
+
+  for (let line of lines) {
+    if (line.startsWith("#EXTINF")) {
+      flush();
+      current = {
+        "player": "p2p/player",
+        "name": "",
+        "category": "",
+        "info": {
+          "poster": "",
+          "plot": "",
+          "year": 2026,
+          "sound": "พากย์ไทย"
+                },
+        "video": "",
+        "Referrer": ""
+      };
+      const commaIdx = line.indexOf(",");
+      const header = line.slice(0, commaIdx);
+      const title = line.slice(commaIdx+1).trim();
+      const attrs = parseAttrs(header);
+      current.category = attrs["group-title"] || "";
+      current.info.poster = attrs["tvg-logo"] || "";
+      current.name = title;
+      // ✅ ดึงค่า year จากวงเล็บ เช่น (2025)
+      const yearMatch = title.match(/\((\d{4})\)/);
+      if (yearMatch) {
+        current.info.year = parseInt(yearMatch[1], 10);
+      }
+    } else if (line.startsWith("#EXTVLCOPT:http-referrer=")) {
+      if (current) current.Referrer = line.replace("#EXTVLCOPT:http-referrer=","").trim();
+    } else if (!line.startsWith("#")) {
+      if (current) current.video = line;
+    }
+  }
+  flush();
+  return entries;
+}
+
+(async () => {
+  const params = new URLSearchParams(window.location.search);
+  const fileUrl = params.get("file");
+  const mode = params.get("mode");
+
+  if (!fileUrl) {
+    document.getElementById("output").textContent = "กรุณาระบุพารามิเตอร์ ?file=...";
+    return;
+  }
+
+  try {
+    const res = await fetch(fileUrl);
+    const text = await res.text();
+    const movies = parseM3U8(text);
+
+    if (mode === "json") {
+      // ✅ ส่งออก JSON เพียว ๆ
+      document.open();
+      document.write(JSON.stringify(movies));
+      document.close();
+    } else {
+      document.getElementById("output").textContent = JSON.stringify(movies, null, 2);
+    }
+  } catch (e) {
+    document.getElementById("output").textContent = "Error: " + e;
+  }
+})();
+</script>
+</body>
+</html>

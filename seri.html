@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>ตัวแยกวิเคราะห์ซีรี่ส์ Doo-Nang</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f9f9f9; padding: 20px; }
+    pre { background: #222; color: #5FBE00; padding: 10px; overflow-x: auto; }
+    button { padding: 8px 12px; margin: 5px; border: none; border-radius: 4px; background: #222; color: #fff; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>ตัวแยกวิเคราะห์ซีรี่ส์ doonang</h1>
+  <input id="showId" type="text" placeholder="กรอก Show ID">
+  <button id="fetchBtn">ดึงข้อมูลซีรีส์</button>
+  <div id="output">รอรับข้อมูล...</div>
+
+<script>
+const nationMap = {
+  TH: "ซีรีส์ ไทย", KR: "ซีรีส์ เกาหลี", JP: "ซีรีส์ ญี่ปุ่น", US: "ซีรีส์ สหรัฐอเมริกา"
+};
+
+async function checkSubtitleExists(url) {
+  try {
+    const res = await fetch(url, { method: 'HEAD' });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+function extractAudioTracks(m3u8Text) {
+  const audioTracks = [];
+  const regex = /#EXT-X-MEDIA:TYPE=AUDIO.*?LANGUAGE="([^"]+)".*?URI="([^"]+)"/g;
+  let match;
+  while ((match = regex.exec(m3u8Text)) !== null) {
+    audioTracks.push({ language: match[1], uri: match[2] });
+  }
+  return audioTracks;
+}
+
+async function fetchSeriesById(showId) {
+  const query = `
+    query getShow($id: Int!) {
+      show(id: $id) {
+        id titleTh titleEn slug synopsisTh descriptionTh releaseDate
+        posterUrl backdropUrl rating imdbRating nation
+        episodes {
+          seasonNo episodeNo titleTh titleEn synopsisTh releaseDate
+          posterUrl backdropUrl
+          video { transcodeUuid cdnHostname subtitleMetadata }
+        }
+      }
+    }
+  `;
+
+  const response = await fetch("https://api.doo-nang.com/graphql", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query, variables: { id: showId } })
+  });
+
+  const result = await response.json();
+  const show = result?.data?.show;
+  if (!show) return { error: "❌ ไม่พบข้อมูลซีรีส์ id=" + showId };
+
+  const seriesData = {
+    id: show.id,
+    name: `${show.titleTh} (${show.titleEn})`,
+    category: nationMap[show.nation] || "ซีรีส์",
+    info: {
+      poster: show.posterUrl,
+      plot: show.synopsisTh || show.descriptionTh || "-",
+      year: show.releaseDate?.substring(0,4) || "0000"
+    },
+    seasons: []
+  };
+
+  const seasonMap = {};
+  for (const ep of show.episodes || []) {
+    const seasonNo = parseInt(ep.seasonNo || 1, 10);
+    if (!seasonMap[seasonNo]) {
+      seasonMap[seasonNo] = {
+        season: seasonNo,
+        name: `${show.titleTh} - Season ${seasonNo}`,
+        info: {
+          poster: ep.posterUrl || show.posterUrl,
+          plot: ep.synopsisTh || show.synopsisTh || "-",
+          year: ep.releaseDate?.substring(0,4) || show.releaseDate?.substring(0,4) || "0000"
+        },
+        episodes: []
+      };
+    }
+    seasonMap[seasonNo].episodes.push(await processEpisode(ep));
+  }
+
+  seriesData.seasons = Object.values(seasonMap);
+  return seriesData;
+}
+
+async function processEpisode(ep) {
+  const transcodeUuid = ep.video?.transcodeUuid;
+  const cdnHostname = ep.video?.cdnHostname;
+  let videoUrl = "";
+  let subtitle = [];
+  let audioTracks = [];
+
+  if (transcodeUuid && cdnHostname) {
+    const base = `https://${cdnHostname}/${transcodeUuid}`;
+    videoUrl = `https://api.doo-nang.com/video/${transcodeUuid}/playlist.m3u8`;
+
+    if (ep.video?.subtitleMetadata) {
+      for (const [lang, subs] of Object.entries(ep.video.subtitleMetadata)) {
+        for (const sub of subs) {
+          const src = `${base}/${sub.pathName}.${sub.codec.toLowerCase()}`;
+          if (await checkSubtitleExists(src)) {
+            subtitle.push({ lang, codec: sub.codec, src });
+          }
+        }
+      }
+    }
+
+    try {
+      const res = await fetch(videoUrl);
+      if (res.ok) {
+        const m3u8Text = await res.text();
+        audioTracks = extractAudioTracks(m3u8Text);
+      }
+    } catch {}
+  }
+
+  return {
+    episode: parseInt(ep.episodeNo,10),
+    title: ep.titleTh || ep.titleEn || `EP${ep.episodeNo}`,
+    video: videoUrl,
+    subtitle,
+    audioTracks
+  };
+}
+
+document.getElementById("fetchBtn").addEventListener("click", async () => {
+  const id = parseInt(document.getElementById("showId").value, 10);
+  const output = document.getElementById("output");
+  output.innerHTML = "⏳ กำลังโหลด...";
+  const data = await fetchSeriesById(id);
+  output.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,261 @@
+/* ==============================
+   GLOBAL
+============================== */
+
+body{
+  font-family: Arial, sans-serif;
+  background:#0f172a;
+  color:#fff;
+  margin:0;
+  padding:10px;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:14px;
+  background:#111827;
+}
+
+th, td{
+  padding:10px 8px;
+  text-align:center;
+  border-bottom:1px solid #1f2937;
+  vertical-align:middle;
+}
+
+thead{
+  background:#1e293b;
+}
+
+tr:hover{
+  background:#1f2937;
+}
+
+
+/* ==============================
+   TEAM CELL
+============================== */
+
+.match-row td:first-child,
+.match-row td:nth-child(3){
+  display:flex;
+  align-items:center;
+  gap:8px;
+  justify-content:flex-start;
+}
+
+.team-logo{
+  width:40px;
+  height:40px;
+  object-fit:contain;
+  flex-shrink:0;
+}
+
+
+/* ==============================
+   LEAGUE HEADER
+============================== */
+
+.league-header td{
+  background:#1e293b;
+  font-weight:bold;
+  text-align:left;
+  padding:10px;
+  font-size:15px;
+}
+
+
+/* ==============================
+   STATUS
+============================== */
+
+.status{
+  padding:4px 8px;
+  border-radius:6px;
+  font-size:12px;
+  font-weight:bold;
+}
+
+.status-live{
+  background:#dc2626;
+  color:#fff;
+}
+
+.status-ft{
+  background:#16a34a;
+  color:#fff;
+}
+
+.status-upcoming{
+  background:#2563eb;
+  color:#fff;
+}
+
+
+/* ==============================
+   CHANNEL BUTTON
+============================== */
+
+.toggle-channel-btn{
+  padding:6px 10px;
+  font-size:12px;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+  background:#374151;
+  color:#fff;
+  transition:0.2s;
+}
+
+.toggle-channel-btn:hover{
+  background:#4b5563;
+}
+
+
+/* ==============================
+   CHANNEL ROW (DESKTOP CLEAN)
+============================== */
+
+.channel-row td{
+  background:#0f172a;
+  padding:16px 10px;
+  text-align:center;
+}
+
+/* ใช้ Grid เรียงสวย */
+.channel-big-wrapper{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(90px,1fr));
+  gap:16px;
+  max-width:800px;
+  margin:0 auto;
+}
+
+.channel-big-item{
+  background:#1f2937;
+  border-radius:12px;
+  padding:12px;
+  cursor:pointer;
+  transition:0.25s ease;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.channel-big-item:hover{
+  background:#374151;
+  transform:translateY(-3px);
+}
+
+.channel-big-logo{
+  width:60px;
+  height:60px;
+  object-fit:contain;
+}
+
+
+/* ==============================
+   ACTIVE MATCH
+============================== */
+
+.active-match{
+  background:#0c4a6e !important;
+}
+
+
+/* ==============================
+   PLAYER BOX
+============================== */
+
+#playerBox{
+  display:none;
+  margin-bottom:20px;
+  background:#111827;
+  padding:15px;
+  border-radius:8px;
+}
+
+#playerBox.active{
+  display:block;
+}
+
+#playerBox h2{
+  font-size:16px;
+  margin-bottom:10px;
+}
+
+#videoPlayer{
+  width:100%;
+  border-radius:8px;
+}
+
+
+/* ==============================
+   SEARCH + SELECT
+============================== */
+
+select, input{
+  padding:6px 10px;
+  border-radius:6px;
+  border:1px solid #374151;
+  background:#1f2937;
+  color:#fff;
+  font-size:13px;
+  margin-right:6px;
+}
+
+
+/* ==============================
+   MOBILE (SIMPLE VERSION)
+============================== */
+
+@media (max-width:768px){
+
+  table{
+    font-size:13px;
+  }
+
+  th{
+    display:none;
+  }
+
+  tr{
+    display:block;
+    margin-bottom:12px;
+    background:#111827;
+    padding:10px;
+    border-radius:8px;
+  }
+
+  td{
+    display:block;
+    text-align:left;
+    padding:6px 0;
+    border:none;
+  }
+
+  td::before{
+    content:attr(data-label);
+    font-weight:bold;
+    display:block;
+    font-size:12px;
+    color:#9ca3af;
+    margin-bottom:2px;
+  }
+
+  .team-logo{
+    width:32px;
+    height:32px;
+  }
+
+  .channel-big-wrapper{
+    grid-template-columns:repeat(3,1fr);
+  }
+
+  .channel-big-logo{
+    width:50px;
+    height:50px;
+  }
+
+}
