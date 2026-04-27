@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Movie Player</title>
+  <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
+  <style>
+    body {
+      margin: 0;
+      background-color: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100vw;
+      height: 100vh;
+    }
+    .video-container {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+    }
+    .video-js, #akumaFrame {
+      width: 100%;
+      height: 100%;
+    }
+    .reload-button, .switch-button {
+      position: fixed;
+      top: 15px;
+      z-index: 10000;
+      padding: 8px 12px;
+      border-radius: 4px;
+      text-decoration: none;
+      font-size: 14px;
+      backdrop-filter: blur(4px);
+      transition: background-color 0.3s;
+      color: #fff;
+    }
+    .reload-button {
+      right: 20px;
+      background-color: rgba(0, 123, 255, 0.3);
+    }
+    .reload-button:hover {
+      background-color: rgba(0, 123, 255, 0.6);
+    }
+    .switch-button {
+      left: 20px;
+      background-color: rgba(40, 167, 69, 0.3);
+    }
+    .switch-button:hover { 
+      background-color: rgba(40,167,69,0.6); 
+    }
+    #videoTitle {
+      position: fixed;
+      bottom: 80px;
+      left: 20px;
+      color: #fff;
+      background: rgba(0,0,0,0.5);
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 16px;
+      z-index: 10000;
+    }
+  </style>
+</head>
+<body>
+  <!-- ✅ ปุ่มที่หายไป -->
+  <a href="#" id="switchBtn" class="switch-button">สลับ Player</a>
+  <a href="#" id="reloadBtn" class="reload-button">โหลดซ้ำ</a>
+
+  <div class="video-container">
+    <!-- Video.js สำหรับไฟล์ mp4/m3u8 -->
+    <video id="my-video" class="video-js vjs-default-skin" controls autoplay preload="auto" style="display:none;"></video>
+    <!-- iframe สำหรับหน้าเว็บตัวเล่นจริง -->
+    <iframe id="akumaFrame" style="display:none;" frameborder="0" allowfullscreen></iframe>
+  </div>
+  <div id="videoTitle"></div>
+
+  <!-- Video.js -->
+  <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
+  <!-- hls.js fallback -->
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<script>
+  const params = new URLSearchParams(window.location.search);
+  let file = params.get("file");
+  let name = params.get("name");
+  if (file) file = decodeURIComponent(file);
+  if (name) name = decodeURIComponent(name);
+
+  const videoEl = document.getElementById("my-video");
+  const iframe = document.getElementById("akumaFrame");
+
+  if (file) {
+    if (file.includes("akuma-player.xyz/play/")) {
+      // ใช้ iframe สำหรับหน้าเว็บตัวเล่นจริง
+      iframe.src = file;
+      iframe.style.display = "block";
+      videoEl.style.display = "none";
+    } else {
+      // ใช้ Video.js สำหรับไฟล์ mp4/m3u8
+      videoEl.style.display = "block";
+      iframe.style.display = "none";
+
+      const player = videojs("my-video");
+      player.src({ src: file, type: file.includes(".m3u8") ? "application/x-mpegURL" : "video/mp4" });
+
+      // ถ้า Video.js error → fallback ไปใช้ hls.js
+      player.on("error", function() {
+        console.warn("Video.js error, fallback to hls.js");
+        player.dispose();
+        if (Hls.isSupported()) {
+          const hls = new Hls();
+          hls.loadSource(file);
+          hls.attachMedia(videoEl);
+        } else {
+          videoEl.src = file; // Safari รองรับ native HLS
+        }
+      });
+    }
+  }
+
+  // Show title
+  if (name) {
+    document.title = name;
+    document.getElementById("videoTitle").textContent = name;
+  } else {
+    document.getElementById("videoTitle").textContent = "ไม่พบไฟล์วิดีโอ";
+  }
+
+  // ✅ ปุ่มโหลดซ้ำ
+  document.getElementById("reloadBtn").addEventListener("click", (e) => {
+    e.preventDefault();
+    location.reload();
+  });
+
+  // ✅ ปุ่มสลับ Player
+  document.getElementById("switchBtn").addEventListener("click", (e) => {
+    e.preventDefault();
+    const newUrl = new URL(window.location.href);
+    newUrl.pathname = newUrl.pathname.replace("videojs.html", "jwplayer.html");
+    window.location.href = newUrl.toString();
+  });
+</script>
+</body>
+</html>

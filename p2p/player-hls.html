@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>HLS Proxy Player</title>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <style>
+    body {
+      background: #111;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    video {
+      width: 80%;
+      max-width: 960px;
+      background: #000;
+    }
+    h1 {
+      font-size: 1.2rem;
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>HLS Proxy Player</h1>
+  <video id="video" controls autoplay></video>
+
+  <script>
+    const video = document.getElementById('video');
+
+    // ดึงค่า file จาก query string เช่น ?file=...
+    const urlParams = new URLSearchParams(window.location.search);
+    const file = urlParams.get('file');
+
+    if (!file) {
+      alert("Missing file parameter in URL");
+    } else {
+      const proxyUrl = file;
+
+      if (Hls.isSupported()) {
+        const hls = new Hls();
+        hls.loadSource(proxyUrl);
+        hls.attachMedia(video);
+        hls.on(Hls.Events.MANIFEST_PARSED, function () {
+          video.play();
+        });
+      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        // Safari รองรับ native HLS
+        video.src = proxyUrl;
+        video.addEventListener('loadedmetadata', () => {
+          video.play();
+        });
+      }
+    }
+  </script>
+</body>
+</html>

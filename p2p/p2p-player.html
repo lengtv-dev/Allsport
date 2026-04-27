@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>P2P Player</title>
+  <link rel="stylesheet" href="https://cdn.vidstack.io/player/theme.css" />
+  <link rel="stylesheet" href="https://cdn.vidstack.io/player/video.css" />
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@~1/dist/hls.min.js"></script>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "p2p-media-loader-core": "https://cdn.jsdelivr.net/npm/p2p-media-loader-core@^2/dist/p2p-media-loader-core.es.min.js",
+        "p2p-media-loader-hlsjs": "https://cdn.jsdelivr.net/npm/p2p-media-loader-hlsjs@^2/dist/p2p-media-loader-hlsjs.es.min.js"
+      }
+    }
+  </script>
+  <script type="module" src="https://cdn.vidstack.io/player"></script>
+
+  <style>
+    body, html {
+      margin: 0; padding: 0;
+      height: 100%; width: 100%;
+      overflow: hidden; background-color: #000;
+    }
+    media-player {
+      width: 100%; height: 100%;
+      aspect-ratio: 16/9; display: block;
+    }
+  </style>
+</head>
+<body>
+
+  <media-player title="Akuma Player" playsinline>
+    <media-provider>
+      <media-poster class="vds-poster"></media-poster>
+    </media-provider>
+    <media-video-layout></media-video-layout>
+  </media-player>
+
+  <script type="module">
+    import { HlsJsP2PEngine } from "p2p-media-loader-hlsjs";
+
+    // ฟังก์ชันแปลง videoId เป็นลิงก์ .m3u8 หรือ .txt
+    function convertVideoId(videoId, type = "m3u8") {
+      if (!videoId) return "";
+      switch (type) {
+        case "txt":
+          return `https://files.akuma-player.xyz/view/${videoId}.txt`;
+        case "m3u8":
+        default:
+          return `https://files.akuma-player.xyz/view/${videoId}.m3u8`;
+      }
+    }
+
+    // ฟังก์ชันโหลดไฟล์ .txt แล้วดึงลิงก์ .m3u8 ข้างใน
+    async function loadTxtFile(txtUrl) {
+      const res = await fetch(txtUrl);
+      const text = await res.text();
+      // สมมติว่าใน txt มีลิงก์ m3u8 อยู่บรรทัดแรก
+      const m3u8Url = text.trim().split("\n")[0];
+      return m3u8Url;
+    }
+
+    // 🔧 กำหนดค่า videoId และ type โดยตรง
+    const videoId = "f62825b4-c274-52d7-a79a-249630d63003";
+    const type = "m3u8"; // เปลี่ยนเป็น "txt" ถ้าต้องการโหลดจากไฟล์ .txt
+
+    const player = document.querySelector("media-player");
+
+    async function initPlayer() {
+      let sourceUrl = convertVideoId(videoId, type);
+
+      // ถ้าเป็น .txt → โหลดไฟล์แล้วดึงลิงก์ .m3u8
+      if (type === "txt") {
+        sourceUrl = await loadTxtFile(sourceUrl);
+      }
+
+      const swarmId = sourceUrl.split("?")[0];
+      const isP2PCapable = Hls.isSupported() && p2pml.core.isSupported();
+
+      player.addEventListener("provider-change", (event) => {
+        const provider = event.detail;
+
+        if (provider?.type === "hls" && isP2PCapable) {
+          console.log("✅ Desktop/Android detected: Enabling P2P");
+
+          const HlsWithP2P = HlsJsP2PEngine.injectMixin(window.Hls);
+          provider.library = HlsWithP2P;
+
+          provider.config = {
+            p2p: {
+              core: { 
+                swarmId: swarmId,
+                httpDownloadProbability: 0.06, 
+                httpDownloadProbabilitySkipIfPeers: true,
+              },
+              onHlsJsCreated: (hls) => {
+                hls.config.maxBufferLength = 30;
+                hls.on(Hls.Events.ERROR, (event, data) => {
+                  if (data.fatal) {
+                    switch (data.type) {
+                      case Hls.ErrorTypes.NETWORK_ERROR:
+                        hls.startLoad();
+                        break;
+                      case Hls.ErrorTypes.MEDIA_ERROR:
+                        hls.recoverMediaError();
+                        break;
+                    }
+                  }
+                });
+              }
+            }
+          };
+        } else {
+          console.log("⚠️ Mobile/iOS detected: P2P Disabled (Using Native Playback)");
+        }
+      });
+
+      player.src = sourceUrl;
+    }
+
+    initPlayer();
+  </script>
+</body>
+</html>

@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>รับชมซีรีส์ - Rongyok</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css">
+  <style>
+    body {
+      margin: 0;
+      background: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .video-container {
+      position: relative;
+      width: 100%;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #000;
+      overflow: hidden;
+    }
+    video {
+      max-width: 100%;
+      max-height: 100vh;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+    }
+    .floating-title {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: rgba(255,255,255,0.2);
+      color: #fff;
+      padding: .3rem .8rem;
+      border-radius: 6px;
+      font-family: 'Prompt', sans-serif;
+      font-size: 0.9rem;
+      z-index: 10;
+    }
+    .next-overlay {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0,0,0,0.8);
+      color: #fff;
+      padding: 1rem 2rem;
+      border-radius: 10px;
+      font-size: 1.2rem;
+      display: none;
+      z-index: 10;
+    }
+    /* Sidebar เลือกตอน */
+    .episode-sidebar {
+      position: fixed;
+      right: -350px; /* ซ่อนอยู่นอกจอ */
+      width: 200px;
+      height: 80%;
+      background: rgba(0,0,0,0.9);
+      padding: 10px;
+      transition: right 0.3s ease;
+      overflow-y: auto;
+      z-index: 30;
+    }
+    .episode-sidebar.active {
+      right: 0; /* เลื่อนเข้ามา */
+    }
+    .episode-sidebar h2 {
+      color: #fff;
+      margin-top: 0;
+      margin-bottom: 10px;
+      font-size: 0.8rem;
+    }
+    .episode-sidebar button {
+      display: block;
+      width: 100%;
+      margin: 5px 0;
+      padding: 8px;
+      background: #e53e3e;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      text-align: left;
+    }
+    .episode-sidebar button:hover {
+      background: #c53030;
+    }
+    /* ปุ่ม toggle */
+    .toggle-btn {
+      position: absolute;
+      top: 20px; /* อยู่ใต้ floating-title */
+      left: 100px; /*right: 20px;*/
+      background: rgba(229,62,62,0.9);
+      color: #fff;
+      padding: 6px 12px;
+      border-radius: 5px;
+      cursor: pointer;
+      z-index: 40;
+      font-size: 0.9rem;
+    }
+    /* ปุ่มย้อนกลับ */
+    .back-btn {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: rgba(255,255,255,0.2);
+      color: #fff;
+      padding: 6px 12px;
+      border-radius: 5px;
+      cursor: pointer;
+      z-index: 40;
+    }
+  </style>
+</head>
+<body>
+  <div class="video-container">
+    <video id="player" playsinline controls></video>
+    <div class="floating-title" id="floatingTitle">กำลังโหลด...</div>
+    <div class="toggle-btn" id="toggleSidebar">📺 เลือกตอน</div>
+    <div class="back-btn" id="backBtn">⬅ กลับ</div>
+    <div id="nextOverlay" class="next-overlay"></div>
+    <div class="episode-sidebar" id="episodeSidebar">
+      <h2 id="seriesTitle">ชื่อเรื่อง</h2>
+      <div id="episodeList"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
+  <script>
+    const player = new Plyr('#player');
+    let episodes = [];
+    let currentIndex = 0;
+    let wakeLock = null;
+    let seriesName = "";
+
+    // อ่าน file จาก URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const fileName = urlParams.get('file');
+
+    if (!fileName) {
+      document.getElementById('floatingTitle').textContent = 'ไม่พบชื่อไฟล์';
+    } else {
+      fetch(`data-lakon/${fileName}.json`)
+        .then(res => res.json())
+        .then(data => {
+          seriesName = data.name;
+          if (seriesName.toLowerCase().endsWith('th')) {
+            seriesName = seriesName.slice(0, -2).trim() + ' พากย์ไทย';
+          } else if (seriesName.toLowerCase().endsWith('sub')) {
+            seriesName = seriesName.slice(0, -3).trim() + ' ซับไทย';
+          }
+          document.title = `รับชม ${seriesName} - Rongyok`;
+
+          // แสดงชื่อหนังใน Sidebar
+          document.getElementById('seriesTitle').textContent = seriesName;
+
+          episodes = data.seasons[0].episodes;
+
+          const list = document.getElementById('episodeList');
+          episodes.forEach((ep, index) => {
+            const btn = document.createElement('button');
+            btn.textContent = ep.name;
+            btn.addEventListener('click', () => {
+              loadEpisode(index);
+              sidebar.classList.remove('active'); // ปิด Sidebar หลังเลือกตอน
+            });
+            list.appendChild(btn);
+          });
+
+          if (episodes.length > 0) {
+            loadEpisode(0);
+          }
+        })
+        .catch(err => {
+          document.getElementById('floatingTitle').textContent = 'โหลดข้อมูลล้มเหลว';
+          console.error(err);
+        });
+    }
+
+    function loadEpisode(index) {
+      currentIndex = index;
+      player.source = {
+        type: 'video',
+        sources: [{ src: episodes[index].video, type: 'video/mp4' }]
+      };
+      player.play();
+
+      // Floating-title แสดงเฉพาะตอนที่กำลังเล่น
+      const titleBox = document.getElementById('floatingTitle');
+      titleBox.textContent = episodes[index].name;
+    }
+
+    function showNextOverlay(nextEpName, callback) {
+      const overlay = document.getElementById('nextOverlay');
+      overlay.textContent = `กำลังเล่น ${nextEpName} ต่อไป...`;
+      overlay.style.display = 'block';
+      setTimeout(() => {
+        overlay.style.display = 'none';
+        callback();
+      }, 3000);
+    }
+
+    player.on('ended', () => {
+      if (currentIndex < episodes.length - 1) {
+        const nextIndex = currentIndex + 1;
+        showNextOverlay(episodes[nextIndex].name, () => {
+          loadEpisode(nextIndex);
+        });
+      } else {
+        alert('คุณดูครบทุกตอนแล้ว 🎉');
+        releaseWakeLock();
+      }
+    });
+
+    async function requestWakeLock() {
+      try {
+        wakeLock = await navigator.wakeLock.request('screen');
+        wakeLock.addEventListener('release', () => {
+          console.log('Wake Lock released');
+        });
+      } catch (err) {
+        console.error(`${err.name}, ${err.message}`);
+      }
+    }
+
+    function releaseWakeLock() {
+      if (wakeLock !== null) {
+        wakeLock.release();
+        wakeLock = null;
+      }
+    }
+
+    player.on('play', () => {
+      requestWakeLock();
+    });
+
+    player.on('pause', () => {
+      releaseWakeLock();
+    });
+
+    // Toggle Sidebar
+    const toggleBtn = document.getElementById('toggleSidebar');
+    const sidebar = document.getElementById('episodeSidebar');
+    toggleBtn.addEventListener('click', () => {
+      sidebar.classList.toggle('active');
+    });
+
+    // ปุ่มย้อนกลับ
+    const backBtn = document.getElementById('backBtn');
+    backBtn.addEventListener('click', () => {
+      window.history.back();
+    });
+  </script>
+</body>
+</html

@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="referrer" content="no-referrer-when-downgrade">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta http-equiv="Cache-Control" content="max-age=3600, public">
+  <title>Movie Player</title>
+  <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-[#141414] text-white font-sans">
+
+  <!-- Header -->
+  <header id="mainHeader" class="bg-[#141414] shadow-lg">
+    <div class="container mx-auto px-4 py-4 flex justify-start items-center">
+      <a href="../movie.html">
+        <h1 class="text-3xl font-extrabold text-[#E50914] tracking-wider">
+          FLIX <span class="text-white">Movie</span>
+        </h1>
+      </a>
+    </div>
+  </header>
+
+  <!-- Main -->
+<main class="relative w-full h-screen bg-black overflow-hidden group">
+
+  <!-- VIDEO -->
+  <video
+    id="my-video"
+    class="w-full h-full object-contain bg-black"
+    preload="auto">
+    <source id="videoSource" src="" type="">
+  </video>
+  <!-- SEEK OVERLAY -->
+<div id="seekOverlay"
+     class="absolute inset-0 flex items-center justify-center 
+            text-white text-4xl font-bold pointer-events-none 
+            opacity-0 transition-opacity duration-200 z-50">
+</div>
+<!-- NETFLIX CONTROL BAR -->
+<div id="controlBar"
+     class="absolute bottom-0 left-0 w-full px-6 pb-6 pt-10 
+            bg-gradient-to-t from-black/90 via-black/60 to-transparent
+            opacity-100 transition-opacity duration-300 z-40">
+
+  <!-- Progress -->
+  <div class="mb-4">
+    <input id="progress"
+           type="range"
+           value="0"
+           min="0"
+           max="100"
+           class="w-full accent-red-600 cursor-pointer">
+  </div>
+
+  <!-- Controls Row -->
+  <div class="flex items-center justify-between text-white">
+
+    <!-- Left -->
+    <div class="flex items-center gap-4">
+      <button id="playPause" class="text-2xl">▶</button>
+
+      <span id="timeDisplay" class="text-sm opacity-80">
+        00:00 / 00:00
+      </span>
+
+      <input id="volume"
+             type="range"
+             min="0"
+             max="1"
+             step="0.05"
+             value="1"
+             class="w-24 accent-white cursor-pointer">
+    </div>
+
+    <!-- Right -->
+    <div class="flex items-center gap-4">
+
+      <select id="speedControl"
+              class="bg-transparent border border-gray-500 rounded px-2 py-1 text-sm">
+        <option value="0.5">0.5x</option>
+        <option value="1" selected>1x</option>
+        <option value="1.5">1.5x</option>
+        <option value="2">2x</option>
+      </select>
+
+      <button id="fullscreenBtn" class="text-xl">⛶</button>
+    </div>
+
+  </div>
+</div>
+  <!-- Loading Spinner -->
+  <div id="loadingSpinner"
+       class="absolute inset-0 flex items-center justify-center bg-black z-20">
+    <div class="w-14 h-14 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+  </div>
+
+  <!-- Big Play Button -->
+  <div id="bigPlay"
+       class="absolute inset-0 flex items-center justify-center z-20 cursor-pointer">
+    <div class="w-24 h-24 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center hover:scale-110 transition">
+      <div class="ml-2 w-0 h-0 border-t-[18px] border-b-[18px] border-l-[28px] border-t-transparent border-b-transparent border-l-white"></div>
+    </div>
+  </div>
+
+  <!-- Gradient -->
+  <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none"></div>
+
+  <!-- Top Controls -->
+  <div id="topBar"
+       class="absolute top-0 left-0 w-full flex justify-between items-center p-5 z-30 transition-opacity duration-300 opacity-100">
+    <a href="../movie.html"
+       class="text-white text-sm font-semibold bg-black/60 px-4 py-2 rounded hover:bg-black">
+       ← ย้อนกลับ
+    </a>
+
+    <button id="reloadBtn"
+       class="text-white text-sm font-semibold bg-red-600/80 px-4 py-2 rounded hover:bg-red-600">
+       โหลดซ้ำ
+    </button>
+  </div>
+
+  <!-- Bottom Info -->
+  <div id="bottomBar"
+     class="absolute left-0 w-full px-6 z-30 transition-opacity duration-300 opacity-100"
+     style="bottom:110px;">
+    <h1 id="videoTitle"
+    class="text-2xl md:text-4xl font-extrabold text-white drop-shadow-2xl tracking-wide">
+        กำลังโหลด...
+    </h1>
+  </div>
+
+  <!-- Skip Intro -->
+  <button id="skipIntro"
+          class="absolute bottom-24 right-8 bg-white text-black px-4 py-2 rounded font-semibold hidden z-40">
+          ข้ามอินโทร
+  </button>
+
+  <!-- Next Episode -->
+  <button id="nextBtn"
+          class="absolute bottom-24 right-8 bg-red-600 text-white px-4 py-2 rounded font-semibold hidden z-40">
+          ดูเรื่องถัดไป
+  </button>
+
+</main>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+  const params = new URLSearchParams(window.location.search);
+  let file = decodeURIComponent(params.get("file") || "");
+  let name = decodeURIComponent(params.get("name") || "");
+
+  const video = document.getElementById("my-video");
+  const source = document.getElementById("videoSource");
+  const title = document.getElementById("videoTitle");
+  const bigPlay = document.getElementById("bigPlay");
+  const loadingSpinner = document.getElementById("loadingSpinner");
+  const topBar = document.getElementById("topBar");
+  const bottomBar = document.getElementById("bottomBar");
+  const skipIntro = document.getElementById("skipIntro");
+  const nextBtn = document.getElementById("nextBtn");
+  const seekOverlay = document.getElementById("seekOverlay");
+
+  const playPause = document.getElementById("playPause");
+  const progress = document.getElementById("progress");
+  const volume = document.getElementById("volume");
+  const timeDisplay = document.getElementById("timeDisplay");
+  const fullscreenBtn = document.getElementById("fullscreenBtn");
+  const speedControl = document.getElementById("speedControl");
+  const controlBar = document.getElementById("controlBar");
+
+function adjustBottomBar() {
+  const height = controlBar.offsetHeight;
+  bottomBar.style.bottom = (height + 20) + "px";
+}
+
+window.addEventListener("load", adjustBottomBar);
+window.addEventListener("resize", adjustBottomBar);
+
+  // =========================
+  // LOAD SOURCE
+  // =========================
+  if (name) {
+    document.title = name;
+    title.textContent = name;
+  }
+
+if (file) {
+  const source = document.createElement("source");
+  source.src = file;  // ใช้ file ที่ได้จาก URL params
+  source.type = file.includes(".m3u8") ? "application/x-mpegURL" : "video/mp4";
+
+  video.innerHTML = "";      // ลบ source เก่า
+  video.appendChild(source); 
+  video.load();
+  video.play().catch(() => {}); // auto play (ถ้า browser อนุญาต)
+}
+
+  // =========================
+  // LOADING STATE
+  // =========================
+  video.addEventListener("waiting", () => {
+    loadingSpinner.style.display = "flex";
+  });
+
+  video.addEventListener("playing", () => {
+    loadingSpinner.style.display = "none";
+  });
+
+  video.addEventListener("error", () => {
+    loadingSpinner.innerHTML =
+      "<p class='text-red-500 text-lg'>โหลดวิดีโอไม่สำเร็จ</p>";
+  });
+
+  // =========================
+  // PLAY / PAUSE
+  // =========================
+  bigPlay.onclick = () => video.play();
+  playPause.onclick = () => togglePlay();
+
+  function togglePlay() {
+    video.paused ? video.play() : video.pause();
+  }
+
+  video.onplay = () => {
+    bigPlay.style.display = "none";
+    playPause.textContent = "❚❚";
+  };
+
+  video.onpause = () => {
+    bigPlay.style.display = "flex";
+    playPause.textContent = "▶";
+  };
+
+  // =========================
+  // PROGRESS
+  // =========================
+  video.addEventListener("timeupdate", () => {
+    if (!video.duration) return;
+
+    progress.value =
+      (video.currentTime / video.duration) * 100;
+
+    timeDisplay.textContent =
+      formatTime(video.currentTime) + " / " +
+      formatTime(video.duration);
+
+    skipIntro.classList.toggle(
+      "hidden",
+      !(video.currentTime > 5 && video.currentTime < 60)
+    );
+
+    nextBtn.classList.toggle(
+      "hidden",
+      !(video.duration - video.currentTime < 20)
+    );
+  });
+
+  progress.addEventListener("input", () => {
+    if (!video.duration) return;
+    video.currentTime =
+      (progress.value / 100) * video.duration;
+  });
+
+  // =========================
+  // VOLUME / SPEED
+  // =========================
+  volume.addEventListener("input", () => {
+    video.volume = volume.value;
+  });
+
+  speedControl.addEventListener("change", () => {
+    video.playbackRate =
+      parseFloat(speedControl.value);
+  });
+
+// =========================
+// NETFLIX CINEMA FULLSCREEN MODE
+// =========================
+
+const header = document.getElementById("mainHeader");
+
+fullscreenBtn.onclick = () => {
+  toggleFullScreen();
+};
+
+function toggleFullScreen() {
+
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen();
+  } else {
+    document.exitFullscreen();
+  }
+
+}
+
+// กด F เพื่อ fullscreen
+document.addEventListener("keydown", (e) => {
+  if (e.key === "f" || e.key === "F") {
+    toggleFullScreen();
+  }
+});
+
+// เมื่อสถานะ fullscreen เปลี่ยน
+document.addEventListener("fullscreenchange", async () => {
+
+  const isFull = !!document.fullscreenElement;
+
+  if (isFull) {
+
+    // ซ่อน header
+    header.style.display = "none";
+
+    // เปลี่ยนไอคอน
+    fullscreenBtn.textContent = "🡼";
+
+    // Auto Landscape มือถือ
+    try {
+      if (screen.orientation && screen.orientation.lock) {
+        await screen.orientation.lock("landscape");
+      }
+    } catch (err) {
+      // บาง browser ไม่รองรับ
+    }
+
+  } else {
+
+    // คืน header
+    header.style.display = "block";
+
+    fullscreenBtn.textContent = "⛶";
+
+    // ปลดล็อก orientation
+    try {
+      if (screen.orientation && screen.orientation.unlock) {
+        screen.orientation.unlock();
+      }
+    } catch (err) {}
+
+  }
+
+});
+
+document.addEventListener("fullscreenchange", () => {
+  if (document.fullscreenElement) {
+    fullscreenBtn.textContent = "🡼";
+  } else {
+    fullscreenBtn.textContent = "⛶";
+  }
+});
+
+  // =========================
+  // SKIP / NEXT
+  // =========================
+  skipIntro.onclick = () => video.currentTime = 60;
+  nextBtn.onclick = () => location.href = "../movie.html";
+
+  document.getElementById("reloadBtn").onclick = (e) => {
+    e.preventDefault();
+    location.reload();
+  };
+
+  // =========================
+  // AUTO HIDE UI
+  // =========================
+  let hideTimeout;
+
+  function showUI() {
+    controlBar.style.opacity = "1";
+    topBar.style.opacity = "1";
+    bottomBar.style.opacity = "1";
+    document.body.style.cursor = "default";
+
+    clearTimeout(hideTimeout);
+    hideTimeout = setTimeout(() => {
+      if (!video.paused) {
+        controlBar.style.opacity = "0";
+        topBar.style.opacity = "0";
+        bottomBar.style.opacity = "0";
+        document.body.style.cursor = "none";
+      }
+    }, 3000);
+  }
+
+  document.addEventListener("mousemove", showUI);
+  document.addEventListener("touchstart", showUI);
+
+  // =========================
+  // DOUBLE TAP SEEK
+  // =========================
+  let lastTap = 0;
+
+  video.addEventListener("touchend", (e) => {
+    const now = Date.now();
+    if (now - lastTap < 300) {
+      const x = e.changedTouches[0].clientX;
+      const half = window.innerWidth / 2;
+      seek(x < half ? -10 : 10);
+    }
+    lastTap = now;
+  });
+
+  // =========================
+  // KEYBOARD
+  // =========================
+  document.addEventListener("keydown", (e) => {
+    if (e.code === "Space") {
+      e.preventDefault();
+      togglePlay();
+    }
+    if (e.code === "ArrowRight") seek(5);
+    if (e.code === "ArrowLeft") seek(-5);
+  });
+
+  function seek(sec) {
+    video.currentTime =
+      Math.max(0,
+        Math.min(video.duration,
+          video.currentTime + sec)
+      );
+    showSeekOverlay(sec > 0 ? `+${sec}s` : `${sec}s`);
+  }
+
+  function showSeekOverlay(text) {
+    seekOverlay.textContent = text;
+    seekOverlay.style.opacity = "1";
+    setTimeout(() => {
+      seekOverlay.style.opacity = "0";
+    }, 500);
+  }
+
+  function formatTime(seconds) {
+    if (!seconds || isNaN(seconds)) return "00:00";
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  }
+
+});
+</script>
+</body>
+</html>

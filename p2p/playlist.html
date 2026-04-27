@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Movie Player</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background:#141414;
+      color:#fff;
+      font-family:'Segoe UI',system-ui,sans-serif;
+    }
+    .video-container {
+      max-width:854px;
+      margin:0 auto;
+      position:relative;
+    }
+    #videoFrame {
+      width:100%;
+      height:0; /* ซ่อนตอนแรก */
+      border-radius:8px;
+      transition:height 0.3s ease;
+    }
+    #videoTitle {
+      background:#111;
+      border:1px solid #333;
+      border-radius:10px;
+      padding:8px;
+      text-align:center;
+      margin:12px 0;
+      font-size:1rem;
+      color:#E50914;
+    }
+    .active-episode {
+      background:#E50914!important;
+      color:#fff!important;
+    }
+  </style>
+</head>
+<body>
+  <header class="bg-[#141414] shadow-lg">
+    <div class="container mx-auto px-4 py-4 flex justify-start items-center">
+      <a href="../movie.html">
+        <h1 class="text-3xl font-extrabold text-[#E50914] tracking-wider">
+          FLIX <span class="text-white">Movie</span>
+        </h1>
+      </a>
+    </div>
+  </header>
+
+  <main class="container mx-auto px-4 mt-8 mb-16">
+    <div class="video-container">
+      <!-- ✅ Iframe -->
+      <iframe id="videoFrame"
+        name="videoFrame"
+        frameborder="0"
+        allow="autoplay; encrypted-media; picture-in-picture"
+        allowfullscreen>
+      </iframe>
+
+      <!-- ปุ่ม overlay >
+      <a href="../movie.html"
+        class="absolute top-3 left-3 px-3 py-1.5 rounded-md text-sm font-semibold text-white backdrop-blur-sm bg-white/15 hover:bg-white/35 transition z-50">
+        ย้อนกลับ
+      </a-->
+    </div>
+    <div class="video-container max-w-[854px] px-3 py-1.5 rounded-md text-center font-semibold text-white backdrop-blur-sm bg-white/15 hover:bg-white/35 transition z-50">
+      🎬 ไม่เล่นกรุณากด โหลดซ้ำ
+    </div>
+    
+    <div id="videoTitle"
+      class="w-full rounded-lg border border-gray-700 p-3 text-center mt-4 mb-4 text-lg font-bold bg-gradient-to-r from-black via-[#111] to-black text-[#E50914] shadow-md">
+      🎬 กำลังโหลด...
+    </div>
+
+    <!-- ปุ่ม Next/Previous -->
+<div class="flex justify-between items-center mt-4 space-x-2">
+  <button id="backBtn"
+          class="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition disabled:opacity-50 disabled:cursor-not-allowed">
+    ⬅️ ย้อนกลับ
+  </button>
+  
+  <div class="flex space-x-2">
+    <button id="prevBtn"
+            class="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition disabled:opacity-50 disabled:cursor-not-allowed">
+      ◀️ ก่อนหน้า
+    </button>
+    <button id="nextBtn"
+            class="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition disabled:opacity-50 disabled:cursor-not-allowed">
+      ถัดไป ▶️
+    </button>
+  </div>
+</div>
+
+    <!-- Serial Info -->
+    <div id="serialInfo" class="bg-[#222] p-4 rounded-lg mt-6">
+      <h3 class="text-lg font-semibold mb-2">ข้อมูลซีรี่ย์</h3>
+      <div id="serialDetails" class="text-sm text-gray-300"></div>
+    </div>
+
+    <!-- Season Selector -->
+    <div class="bg-[#222] p-4 rounded-lg mt-6">
+      <label for="seasonSelect" class="block text-lg font-semibold mb-2">เลือกซีซั่น</label>
+      <select id="seasonSelect" class="w-full px-3 py-2 bg-[#333] rounded text-white"></select>
+    </div>
+
+    <!-- Playlist -->
+    <div class="bg-[#222] p-4 rounded-lg mt-6">
+      <h2 class="text-lg font-semibold mb-2">Playlist</h2>
+      <ul id="playlist" class="space-y-2"></ul>
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    let name = params.get("name");
+    if (name) name = decodeURIComponent(name);
+    if (name) {
+      document.title = name;
+      document.getElementById("videoTitle").textContent = name;
+      console.log("Now Playing:", name);
+    }
+
+  // ✅ ปุ่ม Next/Prev
+document.getElementById("backBtn").addEventListener("click", () => {
+  window.location.href = "../movie.html";
+});
+  </script>
+</body>
+</html>
