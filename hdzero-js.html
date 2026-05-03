@@ -72,7 +72,7 @@ function generateM3U(seriesData, type = "m3u8") {
 }
 
 async function parseCategory(id, type = "m3u8") {
-  const categoryUrl = `https://animehdzerooo.com/catagory/${id}`;
+  const categoryUrl = `https://anime-hdzero.com/category/${id}`;
   const html = await fetchViaProxy(categoryUrl);
   if (!html) return null;
 
