@@ -4,4 +4,4 @@
 #EXT-X-ALLOW-CACHE:YES
 #EXT-X-TARGETDURATION:11
 #EXTINF:10.000000,
-http://45.144.165.187:8080/live/live/1111/53
+http://mag.greatott.me/play/live.php?mac=A0:BB:3E:01:61:71&stream=1660491&extension=ts
