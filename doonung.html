@@ -2,18 +2,46 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <title>Doo-Nang Movie Parser</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Doo-Nang Movie Parser & M3U Generator</title>
   <style>
-    body { font-family: Arial, sans-serif; background: #f9f9f9; padding: 20px; }
-    pre { background: #222; color: #0f0; padding: 10px; overflow-x: auto; }
-    button { padding: 8px 12px; margin: 5px; border: none; border-radius: 4px; background: #0078d7; color: #fff; cursor: pointer; }
+    :root { --primary: #5FBE00; --dark: #1a1a1a; --gray: #333; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #121212; color: #eee; padding: 20px; line-height: 1.6; }
+    .container { max-width: 900px; margin: 0 auto; background: #1e1e1e; padding: 30px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    h1 { color: var(--primary); text-align: center; margin-bottom: 30px; }
+    .input-group { display: flex; gap: 10px; margin-bottom: 20px; }
+    input { flex: 1; padding: 12px; border-radius: 6px; border: 1px solid var(--gray); background: #222; color: #fff; font-size: 16px; }
+    button { padding: 12px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+    #fetchBtn { background: var(--primary); color: #000; }
+    #fetchBtn:hover { background: #4da300; transform: translateY(-2px); }
+    .download-btn { background: #0078d7; color: #fff; margin-top: 10px; display: none; }
+    pre { background: #000; color: #5FBE00; padding: 15px; border-radius: 8px; overflow-x: auto; font-size: 13px; max-height: 400px; border: 1px solid var(--gray); }
+    .section-title { margin-top: 30px; border-left: 4px solid var(--primary); padding-left: 10px; color: var(--primary); }
+    .loader { display: none; text-align: center; margin: 20px 0; color: var(--primary); font-weight: bold; }
   </style>
 </head>
 <body>
+
+<div class="container">
   <h1>Doo-Nang Movie Parser</h1>
-  <input id="movieId" type="text" placeholder="กรอก Movie ID">
-  <button id="fetchBtn">ดึงข้อมูล</button>
-  <div id="output">รอรับข้อมูล...</div>
+  
+  <div class="input-group">
+    <input id="movieId" type="number" placeholder="ใส่ Movie ID (เช่น 1234)">
+    <button id="fetchBtn">ดึงข้อมูลและสร้าง M3U</button>
+  </div>
+
+  <div id="loader" class="loader">⏳ กำลังประมวลผลข้อมูล...</div>
+
+  <div id="resultArea" style="display: none;">
+    <button id="downloadBtn" class="download-btn">📥 ดาวน์โหลดไฟล์ .m3u</button>
+    
+    <h3 class="section-title">M3U Playlist Content</h3>
+    <pre id="m3uOutput"></pre>
+
+    <h3 class="section-title">JSON Raw Data</h3>
+    <pre id="jsonOutput"></pre>
+  </div>
+</div>
 
 <script>
 const nationMap = {
@@ -32,14 +60,32 @@ async function checkSubtitleExists(url) {
   }
 }
 
-function extractAudioTracks(m3u8Text) {
+function parseMasterPlaylist(m3u8Text, baseUrl) {
   const audioTracks = [];
-  const regex = /#EXT-X-MEDIA:TYPE=AUDIO.*?LANGUAGE="([^"]+)".*?URI="([^"]+)"/g;
-  let match;
-  while ((match = regex.exec(m3u8Text)) !== null) {
-    audioTracks.push({ language: match[1], uri: match[2] });
+  const videoStreams = [];
+
+  const audioRegex = /#EXT-X-MEDIA:TYPE=AUDIO.*?(?:NAME="([^"]+)")?.*?(?:LANGUAGE="([^"]+)")?.*?URI="([^"]+)"/g;
+  let audioMatch;
+  while ((audioMatch = audioRegex.exec(m3u8Text)) !== null) {
+    const [, name, language, uri] = audioMatch;
+    audioTracks.push({
+      name: name || language || "Unknown",
+      language: language || "unknown",
+      src: uri.startsWith("http") ? uri : `${baseUrl}/${uri}`
+    });
   }
-  return audioTracks;
+
+  const streamRegex = /#EXT-X-STREAM-INF:(?:.*RESOLUTION=(\d+x\d+))?.*?\n([^\n\r]+)/g;
+  let streamMatch;
+  while ((streamMatch = streamRegex.exec(m3u8Text)) !== null) {
+    const [, resolution, uri] = streamMatch;
+    videoStreams.push({
+      resolution: resolution || "Auto",
+      src: uri.startsWith("http") ? uri : `${baseUrl}/${uri}`
+    });
+  }
+
+  return { audioTracks, videoStreams };
 }
 
 async function fetchMovieById(movieId) {
@@ -62,7 +108,7 @@ async function fetchMovieById(movieId) {
   const result = await response.json();
   const movie = result?.data?.movie;
   if (!movie) {
-    return { error: "❌ ไม่พบข้อมูลภาพยนตร์ id=" + movieId };
+    throw new Error("❌ ไม่พบข้อมูลภาพยนตร์ ID: " + movieId);
   }
 
   const genres = movie.genres?.map(g => g.name) || [];
@@ -75,11 +121,12 @@ async function fetchMovieById(movieId) {
   const cdnHostname = movie.video?.cdnHostname;
   const subtitle = [];
   let audioTracks = [];
-  let videoUrl = "";
+  let videoStreams = [];
+  let playlistUrl = "";
 
   if (transcodeUuid && cdnHostname) {
     const base = `https://${cdnHostname}/${transcodeUuid}`;
-    videoUrl = `https://api.doo-nang.com/video/${transcodeUuid}/playlist.m3u8`;
+    playlistUrl = `https://api.doo-nang.com/video/${transcodeUuid}/playlist.m3u8`;
 
     const subtitleVariants = [
       { lang: "th", codec: "VTT", src: `${base}/sub_tha.vtt` },
@@ -90,10 +137,14 @@ async function fetchMovieById(movieId) {
     }
 
     try {
-      const res = await fetch(videoUrl);
+      const res = await fetch(playlistUrl);
       if (res.ok) {
         const m3u8Text = await res.text();
-        audioTracks = extractAudioTracks(m3u8Text);
+        const baseUrl = playlistUrl.substring(0, playlistUrl.lastIndexOf('/'));
+        const parsedData = parseMasterPlaylist(m3u8Text, baseUrl);
+        
+        audioTracks = parsedData.audioTracks;
+        videoStreams = parsedData.videoStreams;
       }
     } catch (e) {
       console.warn("ไม่สามารถโหลด playlist.m3u8 ได้", e);
@@ -102,7 +153,8 @@ async function fetchMovieById(movieId) {
 
   return {
     id: movie.id,
-    name: `${movie.titleEn || movie.titleTh} - ${movie.titleTh || movie.titleEn}`,
+    name: movie.titleTh || movie.titleEn,
+    fullName: `${movie.titleEn || movie.titleTh} - ${movie.titleTh || movie.titleEn}`,
     category,
     info: {
       poster: movie.posterUrl,
@@ -111,18 +163,57 @@ async function fetchMovieById(movieId) {
       rating: imdbRating,
       year
     },
-    video: videoUrl,
-    subtitle,
-    audioTracks
+    playlist: playlistUrl,
+    videoStreams,
+    audioTracks,
+    subtitle
   };
 }
 
+function generateM3U(movieData) {
+  let m3u = "#EXTM3U\n";
+  if (movieData.playlist) {
+    m3u += `#EXTINF:-1 type="movie" group-title="${movieData.category}" tvg-logo="${movieData.info.poster}", ${movieData.name} (${movieData.info.year})\n`;
+    m3u += `${movieData.playlist}\n`;
+  }
+  return m3u;
+}
+
 document.getElementById("fetchBtn").addEventListener("click", async () => {
-  const id = parseInt(document.getElementById("movieId").value, 10);
-  const output = document.getElementById("output");
-  output.innerHTML = "⏳ กำลังโหลด...";
-  const data = await fetchMovieById(id);
-  output.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+  const idInput = document.getElementById("movieId").value;
+  const id = parseInt(idInput, 10);
+  const loader = document.getElementById("loader");
+  const resultArea = document.getElementById("resultArea");
+
+  if (!id) return alert("กรุณาใส่ Movie ID");
+
+  loader.style.display = "block";
+  resultArea.style.display = "none";
+
+  try {
+    const data = await fetchMovieById(id);
+    const m3u = generateM3U(data);
+
+    document.getElementById("m3uOutput").textContent = m3u;
+    document.getElementById("jsonOutput").textContent = JSON.stringify(data, null, 2);
+
+    const downloadBtn = document.getElementById("downloadBtn");
+    downloadBtn.style.display = "block";
+    downloadBtn.onclick = () => {
+      const blob = new Blob([m3u], { type: 'text/plain' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${data.name.replace(/\s+/g, '_')}_${data.id}.m3u`;
+      a.click();
+    };
+
+    resultArea.style.display = "block";
+  } catch (err) {
+    alert(err.message);
+  } finally {
+    loader.style.display = "none";
+  }
 });
 </script>
 </body>
