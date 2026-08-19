@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Doo-Nang All-in-One Parser (Fixed)</title>
+  <title>Doo-Nang All-in-One Parser (Select Box)</title>
   <style>
     :root { --primary: #5FBE00; --dark: #1a1a1a; --gray: #333; }
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #121212; color: #eee; padding: 20px; line-height: 1.6; }
@@ -12,9 +12,10 @@
     .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid var(--gray); padding-bottom: 10px; overflow-x: auto; }
     .tab-btn { background: #222; color: #ccc; border: 1px solid var(--gray); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; white-space: nowrap; }
     .tab-btn.active { background: var(--primary); color: #000; border-color: var(--primary); }
-    .input-group { display: flex; gap: 10px; margin-bottom: 20px; }
-    input { flex: 1; padding: 12px; border-radius: 6px; border: 1px solid var(--gray); background: #222; color: #fff; font-size: 16px; }
-    button.action-btn { padding: 12px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; background: var(--primary); color: #000; transition: 0.3s; }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 6px; color: #aaa; font-size: 14px; }
+    select, input { width: 100%; padding: 12px; border-radius: 6px; border: 1px solid var(--gray); background: #222; color: #fff; font-size: 16px; box-sizing: border-box; }
+    button.action-btn { width: 100%; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; background: var(--primary); color: #000; transition: 0.3s; margin-top: 10px; font-size: 16px; }
     button.action-btn:hover { background: #4da300; }
     .download-btn { background: #0078d7; color: #fff; margin-top: 10px; display: none; padding: 10px 18px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
     pre { background: #000; color: #5FBE00; padding: 15px; border-radius: 8px; overflow-x: auto; font-size: 13px; max-height: 400px; border: 1px solid var(--gray); }
@@ -30,16 +31,52 @@
   <h1>Doo-Nang All-in-One Parser</h1>
 
   <div class="tabs">
-    <button class="tab-btn active" onclick="switchMode('movie-id')">หนัง (ID)</button>
+    <button class="tab-btn active" onclick="switchMode('serie-tag')">หมวดซีรีส์ (เลือก/วาง URL)</button>
     <button class="tab-btn" onclick="switchMode('series-id')">ซีรีส์ (ID)</button>
-    <button class="tab-btn" onclick="switchMode('movie-tag')">หมวดหนัง</button>
-    <button class="tab-btn" onclick="switchMode('serie-tag')">หมวดซีรีส์ / URL</button>
+    <button class="tab-btn" onclick="switchMode('movie-id')">หนัง (ID)</button>
   </div>
   
-  <div id="panel-movie-id" class="mode-panel active"><div class="input-group"><input id="movieId" type="number" placeholder="ใส่ Movie ID (เช่น 1234)"><button class="action-btn" onclick="handleFetchMovieById()">ดึงข้อมูล</button></div></div>
-  <div id="panel-series-id" class="mode-panel"><div class="input-group"><input id="showId" type="number" placeholder="ใส่ Show ID ซีรีส์ (เช่น 1234)"><button class="action-btn" onclick="handleFetchSeriesById()">ดึงข้อมูล</button></div></div>
-  <div id="panel-movie-tag" class="mode-panel"><div class="input-group"><input id="mTagValue" type="text" placeholder="ใส่ Tag หนัง หรือวาง URL"><button class="action-btn" onclick="handleFetchMovieByTag()">ดึงหนัง</button></div></div>
-  <div id="panel-serie-tag" class="mode-panel"><div class="input-group"><input id="sTagValue" type="text" placeholder="วาง URL ซีรีส์ที่นี่ (เช่น https://www.doo-nang.com/...)"><button class="action-btn" onclick="handleFetchSeriesByTag()">ดึงซีรีส์</button></div></div>
+  <!-- Panel หมวดซีรีส์ -->
+  <div id="panel-serie-tag" class="mode-panel active">
+    <div class="form-group">
+      <label>1. เลือกหมวดหมู่สำเร็จรูป:</label>
+      <select id="sTagSelect" onchange="syncSerieInput()">
+        <option value="">-- หรือเลือกหมวดหมู่ที่นี่ --</option>
+        <option value="https://www.doo-nang.com/ดูหนังออนไลน์/list?type=serie-tag&value=viu&title=ซีรีส์%20Viu">ซีรีส์ Viu</option>
+        <option value="https://www.doo-nang.com/ดูหนังออนไลน์/list?type=serie-tag&value=netflix&title=ซีรีส์%20Netflix">ซีรีส์ Netflix</option>
+        <option value="https://www.doo-nang.com/ดูหนังออนไลน์/list?type=serie-tag&value=disney&title=ซีรีส์%20Disney%20Plus">ซีรีส์ Disney Plus</option>
+        <option value="https://www.doo-nang.com/ดูหนังออนไลน์/list?type=serie-tag&value=hbo&title=ซีรีส์%20HBO">ซีรีส์ HBO</option>
+        <option value="https://www.doo-nang.com/ดูหนังออนไลน์/list?type=serie-tag&value=เกาหลี&title=ซีรีส์%20เกาหลี">ซีรีส์ เกาหลี</option>
+        <option value="https://www.doo-nang.com/ดูหนังออนไลน์/list?type=serie-tag&value=thailand&title=ซีรีส์%20ไทย">ซีรีส์ ไทย</option>
+        <option value="https://www.doo-nang.com/ดูหนังออนไลน์/list?type=serie-genre&value=หนังชีวิต&title=ซีรีส์ดราม่า">ซีรีส์ ดราม่า/หนังชีวิต</option>
+        <option value="https://www.doo-nang.com/ดูหนังออนไลน์/list?type=serie-tag&value=การ์ตูน&title=ซีรีส์การ์ตูน">ซีรีส์ การ์ตูน</option>
+        <option value="https://www.doo-nang.com/ดูหนังออนไลน์/list?type=content&value=series&title=ซีรีส์">ซีรีส์ ทั้งหมด</option>
+      </select>
+    </div>
+    
+    <div class="form-group">
+      <label>2. หรือวาง URL เอง:</label>
+      <input id="sTagValue" type="text" placeholder="วาง URL ซีรีส์ที่นี่...">
+    </div>
+
+    <button class="action-btn" onclick="handleFetchSeriesByTag()">ดึงข้อมูลซีรีส์</button>
+  </div>
+
+  <!-- Panel Series ID -->
+  <div id="panel-series-id" class="mode-panel">
+    <div class="form-group">
+      <input id="showId" type="number" placeholder="ใส่ Show ID ซีรีส์ (เช่น 1234)">
+    </div>
+    <button class="action-btn" onclick="handleFetchSeriesById()">ดึงข้อมูลซีรีส์</button>
+  </div>
+
+  <!-- Panel Movie ID -->
+  <div id="panel-movie-id" class="mode-panel">
+    <div class="form-group">
+      <input id="movieId" type="number" placeholder="ใส่ Movie ID หนัง (เช่น 1234)">
+    </div>
+    <button class="action-btn" onclick="handleFetchMovieById()">ดึงข้อมูลหนัง</button>
+  </div>
 
   <div id="loader" class="loader">⏳ กำลังประมวลผลข้อมูลซีรีส์และค้นหาลิงก์วิดีโอ...</div>
 
@@ -53,8 +90,6 @@
 </div>
 
 <script>
-const nationMap = { TH: "ซีรีส์ ไทย", KR: "ซีรีส์ เกาหลี", JP: "ซีรีส์ ญี่ปุ่น", US: "ซีรีส์ สหรัฐอเมริกา", CN: "ซีรีส์ จีน" };
-
 function switchMode(mode) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.mode-panel').forEach(p => p.classList.remove('active'));
@@ -62,15 +97,17 @@ function switchMode(mode) {
   event.target.classList.add('active');
 }
 
-function parseUrl(str) {
-  try {
-    return new URL(str);
-  } catch {
-    return null;
+function syncSerieInput() {
+  const selectVal = document.getElementById("sTagSelect").value;
+  if (selectVal) {
+    document.getElementById("sTagValue").value = selectVal;
   }
 }
 
-// 1. ดึงซีรีส์จาก ID รายเรื่อง
+function parseUrl(str) {
+  try { return new URL(str); } catch { return null; }
+}
+
 async function fetchSeriesById(showId) {
   const query = `
     query getShow($id: Int!) {
@@ -92,10 +129,9 @@ async function fetchSeriesById(showId) {
   return result?.data?.show;
 }
 
-// 2. ดึงซีรีส์ตาม Tag / หมวดหมู่ / URL
 async function handleFetchSeriesByTag() {
   const input = document.getElementById("sTagValue").value.trim();
-  if (!input) return alert("กรุณาใส่ URL หรือหมวดหมู่");
+  if (!input) return alert("กรุณาเลือกหมวดหมู่ หรือวาง URL");
 
   showLoader(true);
   try {
@@ -108,26 +144,19 @@ async function handleFetchSeriesByTag() {
       val = decodeURIComponent(urlObj.searchParams.get("value") || "");
     }
 
-    // สร้างเงื่อนไข Where ให้ตรงกับ GraphQL Schema ของระบบซีรีส์
     let whereCondition = {};
     if (type === "content") {
-      whereCondition = {}; // ดึงซีรีส์ทั้งหมด
+      whereCondition = {};
     } else if (type === "serie-genre") {
       whereCondition = { genres: { some: { name: { equals: val } } } };
     } else {
-      // serie-tag หรืออื่นๆ
       whereCondition = { tags: { some: { name: { equals: val } } } };
     }
 
     const query = `
       query getShows($skip: Int!, $take: Int!, $where: ShowWhereInput) {
         shows(skip: $skip, take: $take, where: $where, orderBy: {createdAt: desc}) {
-          items {
-            id
-            titleTh
-            titleEn
-            posterUrl
-          }
+          items { id titleTh titleEn posterUrl }
         }
       }
     `;
@@ -141,11 +170,8 @@ async function handleFetchSeriesByTag() {
     const data = await res.json();
     const shows = data?.data?.shows?.items || [];
 
-    if (shows.length === 0) {
-      throw new Error("ไม่พบรายการซีรีส์ในหมวดหมู่นี้");
-    }
+    if (shows.length === 0) throw new Error("ไม่พบรายการซีรีส์ในหมวดหมู่นี้");
 
-    // ดึงข้อมูล Episodes รายเรื่องแบบละเอียดเพื่อเอาลิงก์ วิดีโอ
     const fullSeriesList = [];
     for (const item of shows) {
       const detailedShow = await fetchSeriesById(item.id);
@@ -162,7 +188,6 @@ async function handleFetchSeriesByTag() {
   }
 }
 
-// 3. ฟังก์ชันสร้าง M3U สำหรับซีรีส์
 function renderSeriesResult(shows, filename) {
   let m3u = "#EXTM3U\n";
   const jsonList = [];
@@ -179,17 +204,10 @@ function renderSeriesResult(shows, filename) {
         const eNo = String(ep.episodeNo || 1).padStart(2, '0');
         const epTitle = ep.titleTh || ep.titleEn || `EP${ep.episodeNo}`;
 
-        m3u += `#EXTINF:-1 type="series" group-title="${showTitle}" tvg-logo="${logo}" tvg-season="${ep.seasonNo || 1}" tvg-episode="${ep.episodeNo}", ${showTitle} S${sNo}E${eNo} - ${epTitle}\n`;
+        m3u += `#EXTINF:-1 type="series" group-title="${showTitle}" tvg-logo="${logo}" tvg-season="${ep.seasonNo || 1}" tvg-episode="${ep.episodeNo}", ${showTitle} S${sNo}E${E} - ${epTitle}\n`;
         m3u += `${playUrl}\n`;
 
-        jsonList.push({
-          showId: show.id,
-          showTitle,
-          season: ep.seasonNo || 1,
-          episode: ep.episodeNo,
-          epTitle,
-          playlist: playUrl
-        });
+        jsonList.push({ showId: show.id, showTitle, season: ep.seasonNo || 1, episode: ep.episodeNo, epTitle, playlist: playUrl });
       }
     });
   });
@@ -217,11 +235,8 @@ async function handleFetchSeriesById() {
     const show = await fetchSeriesById(id);
     if (!show) throw new Error("ไม่พบซีรีส์ ID นี้");
     renderSeriesResult([show], `Series_${id}`);
-  } catch (e) {
-    alert(e.message);
-  } finally {
-    showLoader(false);
-  }
+  } catch (e) { alert(e.message); }
+  finally { showLoader(false); }
 }
 
 function showLoader(s) {
