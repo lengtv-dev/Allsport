@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Doo-Nang Fix & M3U Generator</title>
+  <title>Doo-Nang All-in-One Parser (Fixed)</title>
   <style>
     :root { --primary: #5FBE00; --dark: #1a1a1a; --gray: #333; }
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #121212; color: #eee; padding: 20px; line-height: 1.6; }
@@ -12,10 +12,9 @@
     .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid var(--gray); padding-bottom: 10px; overflow-x: auto; }
     .tab-btn { background: #222; color: #ccc; border: 1px solid var(--gray); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; white-space: nowrap; }
     .tab-btn.active { background: var(--primary); color: #000; border-color: var(--primary); }
-    .form-group { margin-bottom: 15px; }
-    label { display: block; margin-bottom: 6px; color: #aaa; font-size: 14px; }
-    select, input { width: 100%; padding: 12px; border-radius: 6px; border: 1px solid var(--gray); background: #222; color: #fff; font-size: 16px; box-sizing: border-box; }
-    button.action-btn { width: 100%; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; background: var(--primary); color: #000; transition: 0.3s; margin-top: 10px; font-size: 16px; }
+    .input-group { display: flex; gap: 10px; margin-bottom: 20px; }
+    input { flex: 1; padding: 12px; border-radius: 6px; border: 1px solid var(--gray); background: #222; color: #fff; font-size: 16px; }
+    button.action-btn { padding: 12px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; background: var(--primary); color: #000; transition: 0.3s; }
     button.action-btn:hover { background: #4da300; }
     .download-btn { background: #0078d7; color: #fff; margin-top: 10px; display: none; padding: 10px 18px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
     pre { background: #000; color: #5FBE00; padding: 15px; border-radius: 8px; overflow-x: auto; font-size: 13px; max-height: 400px; border: 1px solid var(--gray); }
@@ -28,49 +27,21 @@
 <body>
 
 <div class="container">
-  <h1>Doo-Nang Series & Movie Generator</h1>
+  <h1>Doo-Nang All-in-One Parser</h1>
 
   <div class="tabs">
-    <button class="tab-btn active" onclick="switchMode('serie-tag')">หมวดซีรีส์ / เลือก URL</button>
-    <button class="tab-btn" onclick="switchMode('series-id')">ซีรีส์ด้วย Show ID</button>
+    <button class="tab-btn active" onclick="switchMode('movie-id')">หนัง (ID)</button>
+    <button class="tab-btn" onclick="switchMode('series-id')">ซีรีส์ (ID)</button>
+    <button class="tab-btn" onclick="switchMode('movie-tag')">หมวดหนัง</button>
+    <button class="tab-btn" onclick="switchMode('serie-tag')">หมวดซีรีส์ / URL</button>
   </div>
   
-  <!-- Panel หมวดซีรีส์ -->
-  <div id="panel-serie-tag" class="mode-panel active">
-    <div class="form-group">
-      <label>1. เลือกหมวดหมู่สำเร็จรูป:</label>
-      <select id="sTagSelect" onchange="syncSerieInput()">
-        <option value="">-- เลือกหมวดหมู่ที่ต้องการ --</option>
-        <option value="https://www.doo-nang.com/ดูหนังออนไลน์/list?type=serie-tag&value=viu&title=ซีรีส์%20Viu">ซีรีส์ Viu</option>
-        <option value="https://www.doo-nang.com/ดูหนังออนไลน์/list?type=serie-tag&value=netflix&title=ซีรีส์%20Netflix">ซีรีส์ Netflix</option>
-        <option value="https://www.doo-nang.com/ดูหนังออนไลน์/list?type=serie-tag&value=disney&title=ซีรีส์%20Disney%20Plus">ซีรีส์ Disney Plus</option>
-        <option value="https://www.doo-nang.com/ดูหนังออนไลน์/list?type=serie-tag&value=hbo&title=ซีรีส์%20HBO">ซีรีส์ HBO</option>
-        <option value="https://www.doo-nang.com/ดูหนังออนไลน์/list?type=serie-tag&value=เกาหลี&title=ซีรีส์%20เกาหลี">ซีรีส์ เกาหลี</option>
-        <option value="https://www.doo-nang.com/ดูหนังออนไลน์/list?type=serie-tag&value=thailand&title=ซีรีส์%20ไทย">ซีรีส์ ไทย</option>
-        <option value="https://www.doo-nang.com/ดูหนังออนไลน์/list?type=serie-genre&value=หนังชีวิต&title=ซีรีส์ดราม่า">ซีรีส์ ดราม่า</option>
-        <option value="https://www.doo-nang.com/ดูหนังออนไลน์/list?type=serie-tag&value=การ์ตูน&title=ซีรีส์การ์ตูน">ซีรีส์ การ์ตูน</option>
-        <option value="https://www.doo-nang.com/ดูหนังออนไลน์/list?type=content&value=series&title=ซีรีส์">ซีรีส์ ทั้งหมด</option>
-      </select>
-    </div>
-    
-    <div class="form-group">
-      <label>2. หรือวาง URL ที่ต้องการดึง:</label>
-      <input id="sTagValue" type="text" placeholder="วาง URL ซีรีส์จาก doo-nang.com...">
-    </div>
+  <div id="panel-movie-id" class="mode-panel active"><div class="input-group"><input id="movieId" type="number" placeholder="ใส่ Movie ID (เช่น 1234)"><button class="action-btn" onclick="handleFetchMovieById()">ดึงข้อมูล</button></div></div>
+  <div id="panel-series-id" class="mode-panel"><div class="input-group"><input id="showId" type="number" placeholder="ใส่ Show ID ซีรีส์ (เช่น 1234)"><button class="action-btn" onclick="handleFetchSeriesById()">ดึงข้อมูล</button></div></div>
+  <div id="panel-movie-tag" class="mode-panel"><div class="input-group"><input id="mTagValue" type="text" placeholder="ใส่ Tag หนัง หรือวาง URL"><button class="action-btn" onclick="handleFetchMovieByTag()">ดึงหนัง</button></div></div>
+  <div id="panel-serie-tag" class="mode-panel"><div class="input-group"><input id="sTagValue" type="text" placeholder="วาง URL ซีรีส์ที่นี่ (เช่น https://www.doo-nang.com/...)"><button class="action-btn" onclick="handleFetchSeriesByTag()">ดึงซีรีส์</button></div></div>
 
-    <button class="action-btn" onclick="handleFetchSeriesByTag()">เริ่มดึงลิงก์ M3U</button>
-  </div>
-
-  <!-- Panel Series ID -->
-  <div id="panel-series-id" class="mode-panel">
-    <div class="form-group">
-      <label>ใส่ Show ID ซีรีส์:</label>
-      <input id="showId" type="number" placeholder="ใส่ตัวเลข Show ID (เช่น 101, 102)">
-    </div>
-    <button class="action-btn" onclick="handleFetchSeriesById()">ดึงลิงก์จาก Show ID</button>
-  </div>
-
-  <div id="loader" class="loader">⏳ กำลังประมวลผลข้อมูลและดึงลิงก์วิดีโอ (ผ่าน CORS Proxy)...</div>
+  <div id="loader" class="loader">⏳ กำลังประมวลผลข้อมูลซีรีส์และค้นหาลิงก์วิดีโอ...</div>
 
   <div id="resultArea" style="display: none;">
     <button id="downloadBtn" class="download-btn">📥 ดาวน์โหลดไฟล์ .m3u</button>
@@ -82,9 +53,7 @@
 </div>
 
 <script>
-// ใช้ CORS Proxy ช่วยทะลวงการบล็อก
-const PROXY_URL = "https://corsproxy.io/?";
-const API_URL = "https://api.doo-nang.com/graphql";
+const nationMap = { TH: "ซีรีส์ ไทย", KR: "ซีรีส์ เกาหลี", JP: "ซีรีส์ ญี่ปุ่น", US: "ซีรีส์ สหรัฐอเมริกา", CN: "ซีรีส์ จีน" };
 
 function switchMode(mode) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -93,68 +62,66 @@ function switchMode(mode) {
   event.target.classList.add('active');
 }
 
-function syncSerieInput() {
-  const selectVal = document.getElementById("sTagSelect").value;
-  if (selectVal) {
-    document.getElementById("sTagValue").value = selectVal;
+function parseUrl(str) {
+  try {
+    return new URL(str);
+  } catch {
+    return null;
   }
 }
 
-async function sendGraphQLRequest(query, variables) {
-  const target = PROXY_URL + encodeURIComponent(API_URL);
-  const response = await fetch(target, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query, variables })
-  });
-
-  if (!response.ok) throw new Error("ไม่สามารถติดต่อ API ของ Doo-Nang ได้");
-  return await response.json();
-}
-
+// 1. ดึงซีรีส์จาก ID รายเรื่อง
 async function fetchSeriesById(showId) {
   const query = `
     query getShow($id: Int!) {
       show(id: $id) {
-        id
-        titleTh
-        titleEn
-        posterUrl
+        id titleTh titleEn nation posterUrl
         episodes {
-          seasonNo
-          episodeNo
-          titleTh
-          titleEn
+          seasonNo episodeNo titleTh titleEn
           video { transcodeUuid }
         }
       }
     }
   `;
-  const result = await sendGraphQLRequest(query, { id: parseInt(showId, 10) });
+  const res = await fetch("https://api.doo-nang.com/graphql", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query, variables: { id: parseInt(showId, 10) } })
+  });
+  const result = await res.json();
   return result?.data?.show;
 }
 
+// 2. ดึงซีรีส์ตาม Tag / หมวดหมู่ / URL
 async function handleFetchSeriesByTag() {
   const input = document.getElementById("sTagValue").value.trim();
-  if (!input) return alert("กรุณาเลือกหมวดหมู่ หรือวาง URL ก่อนครับ");
+  if (!input) return alert("กรุณาใส่ URL หรือหมวดหมู่");
 
   showLoader(true);
   try {
-    let tagValue = input;
-    
-    // ถ้ารับมาเป็น URL ให้ดึงค่าจากพารามิเตอร์ value
-    if (input.includes("http")) {
-      try {
-        const urlObj = new URL(input);
-        const val = urlObj.searchParams.get("value");
-        if (val) tagValue = decodeURIComponent(val);
-      } catch (e) {}
+    const urlObj = parseUrl(input);
+    let type = "serie-tag";
+    let val = input;
+
+    if (urlObj) {
+      type = urlObj.searchParams.get("type") || "serie-tag";
+      val = decodeURIComponent(urlObj.searchParams.get("value") || "");
     }
 
-    // สคริปต์ Query ลองดึงข้อมูลซีรีส์
-    const queryList = `
-      query getShows($take: Int!) {
-        shows(take: $take, orderBy: {createdAt: desc}) {
+    // สร้างเงื่อนไข Where ให้ตรงกับ GraphQL Schema ของระบบซีรีส์
+    let whereCondition = {};
+    if (type === "content") {
+      whereCondition = {}; // ดึงซีรีส์ทั้งหมด
+    } else if (type === "serie-genre") {
+      whereCondition = { genres: { some: { name: { equals: val } } } };
+    } else {
+      // serie-tag หรืออื่นๆ
+      whereCondition = { tags: { some: { name: { equals: val } } } };
+    }
+
+    const query = `
+      query getShows($skip: Int!, $take: Int!, $where: ShowWhereInput) {
+        shows(skip: $skip, take: $take, where: $where, orderBy: {createdAt: desc}) {
           items {
             id
             titleTh
@@ -165,60 +132,43 @@ async function handleFetchSeriesByTag() {
       }
     `;
 
-    const data = await sendGraphQLRequest(queryList, { take: 15 });
+    const res = await fetch('https://api.doo-nang.com/graphql', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, operationName: 'getShows', variables: { skip: 0, take: 30, where: whereCondition } })
+    });
+
+    const data = await res.json();
     const shows = data?.data?.shows?.items || [];
 
     if (shows.length === 0) {
-      throw new Error("ไม่พบข้อมูลซีรีส์จากเซิร์ฟเวอร์");
+      throw new Error("ไม่พบรายการซีรีส์ในหมวดหมู่นี้");
     }
 
-    // ดึงรายละเอียดเชิงลึกเพื่อเอา transcodeUuid ทุกตอน
+    // ดึงข้อมูล Episodes รายเรื่องแบบละเอียดเพื่อเอาลิงก์ วิดีโอ
     const fullSeriesList = [];
     for (const item of shows) {
-      try {
-        const detail = await fetchSeriesById(item.id);
-        if (detail && detail.episodes && detail.episodes.length > 0) {
-          fullSeriesList.push(detail);
-        }
-      } catch (e) {
-        console.warn("Skip ID:", item.id);
+      const detailedShow = await fetchSeriesById(item.id);
+      if (detailedShow && detailedShow.episodes) {
+        fullSeriesList.push(detailedShow);
       }
     }
 
-    if (fullSeriesList.length === 0) {
-      throw new Error("ไม่พบลำดับตอนหรือลิงก์วิดีโอในหมวดหมู่นี้");
-    }
-
-    renderSeriesResult(fullSeriesList, `DooNang_Series_${tagValue}`);
+    renderSeriesResult(fullSeriesList, `Series_${val || 'List'}`);
   } catch (e) {
-    alert("เกิดข้อผิดพลาด: " + e.message);
+    alert(e.message || "เกิดข้อผิดพลาดในการดึงข้อมูล");
   } finally {
     showLoader(false);
   }
 }
 
-async function handleFetchSeriesById() {
-  const id = document.getElementById("showId").value;
-  if (!id) return alert("กรุณากรอก Show ID");
-  
-  showLoader(true);
-  try {
-    const show = await fetchSeriesById(id);
-    if (!show || !show.episodes) throw new Error("ไม่พบข้อมูลซีรีส์จาก ID นี้");
-    renderSeriesResult([show], `Series_${id}`);
-  } catch (e) {
-    alert(e.message);
-  } finally {
-    showLoader(false);
-  }
-}
-
+// 3. ฟังก์ชันสร้าง M3U สำหรับซีรีส์
 function renderSeriesResult(shows, filename) {
   let m3u = "#EXTM3U\n";
   const jsonList = [];
 
   shows.forEach(show => {
-    const showTitle = show.titleTh || show.titleEn || "Unknown Series";
+    const showTitle = show.titleTh || show.titleEn;
     const logo = show.posterUrl || "";
 
     (show.episodes || []).forEach(ep => {
@@ -244,11 +194,6 @@ function renderSeriesResult(shows, filename) {
     });
   });
 
-  if (jsonList.length === 0) {
-    alert("ไม่พบวิดีโอที่พร้อมใช้งานในรายการนี้");
-    return;
-  }
-
   document.getElementById("m3uOutput").textContent = m3u;
   document.getElementById("jsonOutput").textContent = JSON.stringify(jsonList, null, 2);
 
@@ -257,11 +202,26 @@ function renderSeriesResult(shows, filename) {
   btn.onclick = () => {
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([m3u], { type: 'text/plain' }));
-    a.download = `${filename.replace(/[^a-zA-Z0-9_\u0E00-\u0E7F]/g, '_')}.m3u`;
+    a.download = `${filename.replace(/\s+/g, '_')}.m3u`;
     a.click();
   };
 
   document.getElementById("resultArea").style.display = "block";
+}
+
+async function handleFetchSeriesById() {
+  const id = document.getElementById("showId").value;
+  if (!id) return alert("กรุณาใส่ Show ID");
+  showLoader(true);
+  try {
+    const show = await fetchSeriesById(id);
+    if (!show) throw new Error("ไม่พบซีรีส์ ID นี้");
+    renderSeriesResult([show], `Series_${id}`);
+  } catch (e) {
+    alert(e.message);
+  } finally {
+    showLoader(false);
+  }
 }
 
 function showLoader(s) {
